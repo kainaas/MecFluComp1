@@ -63,6 +63,12 @@ class Circle:
             l = Line(points[i,:], points[i+1,:], counter_clockwise)
             self.lines.append(l)
 
+    def get_angular_size(self):
+        return 2* np.pi
+
+    def get_arc_length(self):
+        return self.r * self.get_angular_size()
+
     def plot(self, ax: matplotlib.axes, n_line_segments: int = 100):
         points = self.get_points_eq_space(n_line_segments)
         ax.plot(points[:,0], points[:,1])
@@ -110,8 +116,9 @@ class Arc(Circle):
         center = np.linalg.solve(M, b)
 
         return cls(x_start, x_end, center, counter)
-          
-    def get_points_eq_space(self, n_segments: int):
+    
+
+    def get_angular_size(self):
         v1 = self.x1 - self.c
         v2 = self.x2 - self.c
 
@@ -122,10 +129,17 @@ class Arc(Circle):
             diff = (theta2 - theta1) % (2*np.pi)
         else:
             diff = (theta1 - theta2) % (2*np.pi)
+        return diff
+
+    def get_points_eq_space(self, n_segments: int):
+        diff = self.get_angular_size()
 
         if diff < 1e-12: 
             super().plot(ax, n_segments)
             return
+
+        v1 = self.x1 - self.c
+        theta1 = angle_origin_vector(v1)
 
         theta = np.linspace(0, diff, n_segments + 1)
 
@@ -154,6 +168,21 @@ class Contour:
     def discretize_n_lines(self, n_segments: int, counter_clockwise: bool = True):
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
+                comp.discretize(n_segments, counter_clockwise)
+                for _, l in enumerate(comp.lines):
+                    self.lines.append(l)
+
+            else: self.lines.append(comp)
+
+    def discretize_size_lines(self, max_size: float, counter_clockwise: bool = True):
+        for _, comp in enumerate(self.components):
+            if isinstance(comp, Circle):
+                arc_length = comp.get_arc_length()
+                n_segments = arc_length / max_size
+                if n_segments.is_integer():
+                    n_segments = int(n_segments)
+                else:    
+                    n_segments = int(n_segments+1)
                 comp.discretize(n_segments, counter_clockwise)
                 for _, l in enumerate(comp.lines):
                     self.lines.append(l)
@@ -206,10 +235,10 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(1000,1000,"px"))
     ax = fig.add_subplot(111)
 
-    obj.discretize_n_lines(10)
+    obj.discretize_size_lines(10.0)
     obj_c.discretize_n_lines(6, False)
 
-    d = False
+    d = True
     if d:
         obj.plot_discretized(ax, True)
         obj_c.plot_discretized(ax, True)
