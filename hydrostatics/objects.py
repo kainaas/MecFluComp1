@@ -29,7 +29,6 @@ class Line:
         self.normal = normal/ np.linalg.norm(normal)
         if normal_counter_clock == False:
             self.invert_normal()
-        self.points = []
 
     def invert_normal(self): #When it's needed to invert the normal, i.e., points inside object. If the object is not simply conected
         for i in range(2):
@@ -40,6 +39,11 @@ class Line:
         if normal:
             midpoint = (self.x1 + self.x2)/2
             ax.quiver(midpoint[0], midpoint[1], self.normal[0], self.normal[1])
+
+    #Parametrizes the line to the interval [-1, 1]
+    def param_func(self, xi: float) -> np.array:
+        return (1- xi)*self.x1 / 2 + (1 + xi)*self.x2 / 2
+
 
 
 
