@@ -58,7 +58,7 @@ class Circle:
 
     def get_points_eq_space(self, n_segments: int):
         pace = 2*np.pi / (n_segments)
-        return np.array([[self.c + self.r*np.cos(i*pace), self.c + self.r*np.sin(i*pace)] for i in range(n_segments+1)])
+        return np.array([[self.c[0] + self.r*np.cos(i*pace), self.c[1] + self.r*np.sin(i*pace)] for i in range(n_segments+1)])
 
     def discretize(self, n_segments: int, counter_clockwise: bool = True):
         self.lines = []
