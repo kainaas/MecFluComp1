@@ -1,6 +1,6 @@
 #Lines: L x1 y1 x2 y2 counter_clockwise(1 for true, 0 for false)
 #Circles: C c1 c2 r counter_clockwise
-#Arc: Ac x1 x2 x2 y2 c1 c2 counter_clockwise
+#Arc: Ac x1 y1 x2 y2 c1 c2 counter_clockwise(normal) counter_clock_wise(for drawing)
 #Arc using 3 points: A3 x1 y1 x2 y2 x3 y3
 
 L 4.0 2.0 -4.0 2.0 1

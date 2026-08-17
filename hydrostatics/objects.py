@@ -111,14 +111,15 @@ class Circle:
 
 '''Specialization of a Circle'''
 class Arc(Circle):
-    def __init__(self, x_start: np.array, x_end: np.array, center: np.array, counter_clockwise: bool):
+    def __init__(self, x_start: np.array, x_end: np.array, center: np.array, counter_clockwise_normal: bool, counter_clockwise: bool = True):
         self.x1 = x_start
         self.x2 = x_end
+        self.counter_clockwise_draw = counter_clockwise
         r = np.linalg.norm(center - x_start)
-        super().__init__(center, r, counter_clockwise)
+        super().__init__(center, r, counter_clockwise_normal)
 
     @classmethod
-    def from_3_points(cls, x_start: np.array, x_middle: np.array, x_end: np.array):
+    def from_3_points(cls, x_start: np.array, x_middle: np.array, x_end: np.array, counter_clockwise_normal: bool = True):
         
         v1 = x_middle - x_start
         v2 = x_end - x_start
@@ -142,7 +143,7 @@ class Arc(Circle):
         
         center = np.linalg.solve(M, b)
 
-        return cls(x_start, x_end, center, counter)
+        return cls(x_start, x_end, center, counter_clockwise_normal, counter)
     
 
     def get_angular_size(self):
@@ -170,7 +171,7 @@ class Arc(Circle):
 
         theta = np.linspace(0, diff, n_segments + 1)
 
-        if self.counter_clockwise:
+        if self.counter_clockwise_draw:
             theta += theta1
         else:
             theta = theta1 - theta
@@ -287,10 +288,13 @@ class Contour:
                     x1, y1, x2, y2, c1, c2 = float(l[1]), float(l[2]), float(l[3]), float(l[4]), float(l[5]), float(l[6])
                     if len(l) > 7:
                         counter_clockwise = l[7] == "1"
+                    counter_clockwise_draw = True
+                    if len(l) > 8:
+                        counter_clockwise_draw = l[8] == "1"
                     start = point(x1, y1)
                     end = point(x2, y2)
                     center =point(c1, c2)
-                    ctr.add_component(Arc(start, end, center, counter_clockwise))
+                    ctr.add_component(Arc(start, end, center, counter_clockwise, counter_clockwise_draw))
 
                 elif l[0] == "A3":
                     x1, y1, x2, y2, x3, y3 = float(l[1]), float(l[2]), float(l[3]), float(l[4]), float(l[5]), float(l[6])
