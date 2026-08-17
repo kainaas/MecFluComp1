@@ -66,14 +66,17 @@ if __name__ == "__main__":
     line3 = Line(p4, p5)
     arc4 = Arc.from_3_points(p5, p6, p1)
 
+    circle1 = Circle(point(0.0,0.0), 1.0, False)
+
     ctr = Contour()
 
     ctr.add_component(line1)
     ctr.add_component(arc2)
     ctr.add_component(line3)
     ctr.add_component(arc4)
+    ctr.add_component(circle1)
 
-    ctr.discretize_n_lines(1000)
+    ctr.discretize_n_lines(30)
 
     volume = int_volume_contour(ctr)
     cm = int_cm_contour(ctr)
@@ -82,14 +85,13 @@ if __name__ == "__main__":
     print(volume)
     print(cm)
 
-    circle1 = Circle(point(0.0,0.0), 1.0)
-    obj_c = Contour()
-    obj_c.add_component(circle1)
-    obj_c.discretize_n_lines(1000, False)
 
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
 
-    volume += int_volume_contour(obj_c)
-    cm+= int_cm_contour(obj_c)
+    #obj_c.plot_discretized(ax, True)
+    ctr.plot_discretized(ax, True)
+    plt.show()
     print("With circle")
     print(volume)
     print(cm)

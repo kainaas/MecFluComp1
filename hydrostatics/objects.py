@@ -34,6 +34,16 @@ class Line:
         for i in range(2):
             self.normal[i] = -self.normal[i]
 
+    def translate(self, x_step: float, y_step: float):
+        p = point(x_step, y_step)
+        self.x1 = self.x1 + p
+        self.x2 = self.x2 + p
+
+    def rotate(self, matrix):
+        self.x1 = matrix @ self.x1
+        self.x2 = matrix @ self.x2
+        self.normal = matrix @ self.normal
+
     def plot(self, ax: matplotlib.axes, normal: bool=False):
         ax.plot([self.x1[0], self.x2[0]], [self.x1[1], self.x2[1]])
         if normal:
@@ -51,10 +61,11 @@ class Line:
 
 '''Represents a full circle in 2D. Has a lines list to store a discretized/segmented circle'''
 class Circle:
-    def __init__(self, center: np.array, radius: float):
+    def __init__(self, center: np.array, radius: float, counter_clockwise: bool = True):
         self.c = center
         self.r = radius
         self.lines = []
+        self.counter_clockwise = counter_clockwise
 
     def get_points_eq_space(self, n_segments: int):
         pace = 2*np.pi / (n_segments)
@@ -73,6 +84,19 @@ class Circle:
     def get_arc_length(self):
         return self.r * self.get_angular_size()
 
+    def translate(self, x_step: float, y_step: float):
+            p = point(x_step, y_step)
+            self.c = self.c + p
+            if len(self.lines) > 0:
+                for l in self.lines:
+                    l.translate(x_step, y_step)
+
+    def rotate(self, matrix):
+            self.c = matrix @ self.c
+            if len(self.lines) > 0:
+                for l in self.lines:
+                    l.rotate(matrix)
+
     def plot(self, ax: matplotlib.axes, n_line_segments: int = 100):
         points = self.get_points_eq_space(n_line_segments)
         ax.plot(points[:,0], points[:,1])
@@ -90,9 +114,8 @@ class Arc(Circle):
     def __init__(self, x_start: np.array, x_end: np.array, center: np.array, counter_clockwise: bool):
         self.x1 = x_start
         self.x2 = x_end
-        self.counter_clockwise = counter_clockwise
         r = np.linalg.norm(center - x_start)
-        super().__init__(center, r)
+        super().__init__(center, r, counter_clockwise)
 
     @classmethod
     def from_3_points(cls, x_start: np.array, x_middle: np.array, x_end: np.array):
@@ -157,6 +180,24 @@ class Arc(Circle):
             self.c[1] + self.r*np.sin(theta)
         ])
 
+
+    def translate(self, x_step: float, y_step: float):
+        p = point(x_step, y_step)
+        self.x1 = self.x1 + p
+        self.x2 = self.x2 + p
+        self.c = self.c + p
+        if len(self.lines) > 0:
+            for l in self.lines:
+                l.translate(x_step, y_step)
+
+    def rotate(self, matrix):
+        self.c = matrix @ self.c
+        self.x1 = matrix @ self.x1
+        self.x2 = matrix @ self.x2
+        if len(self.lines) > 0:
+            for l in self.lines:
+                l.rotate(matrix)
+
         
         
 
@@ -169,16 +210,16 @@ class Contour:
     def add_component(self, component):
         self.components.append(component)
 
-    def discretize_n_lines(self, n_segments: int, counter_clockwise: bool = True):
+    def discretize_n_lines(self, n_segments: int):
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
-                comp.discretize(n_segments, counter_clockwise)
+                comp.discretize(n_segments, comp.counter_clockwise)
                 for _, l in enumerate(comp.lines):
                     self.lines.append(l)
 
             else: self.lines.append(comp)
 
-    def discretize_size_lines(self, max_size: float, counter_clockwise: bool = True):
+    def discretize_size_lines(self, max_size: float):
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
                 arc_length = comp.get_arc_length()
@@ -187,7 +228,7 @@ class Contour:
                     n_segments = int(n_segments)
                 else:    
                     n_segments = int(n_segments+1)
-                comp.discretize(n_segments, counter_clockwise)
+                comp.discretize(n_segments, comp.counter_clockwise)
                 for _, l in enumerate(comp.lines):
                     self.lines.append(l)
 
@@ -203,53 +244,84 @@ class Contour:
         for _, l in enumerate(self.lines):
             l.plot(ax, normal)
 
+    def translate(self, x_step: float, y_step: float):
+        for comp in self.components:
+            comp.translate(x_step, y_step)
+
+    def rotate(self, theta: float):
+        s = np.sin(theta)
+        c = np.cos(theta)
+        mat = np.array([[c, -s], [s, c]])
+        for comp in self.components:
+            comp.rotate(mat)
+
+
+    @classmethod
+    def read_file(cls, file):
+        ctr = cls()
+        with open(file, 'r') as f:
+            for line in f:
+                counter_clockwise = 1
+                l = line.split()
+                if len(l) == 0:
+                    pass
+                elif l[0] == "#":
+                    pass
+                elif l[0] == "L":
+                    x1, y1, x2, y2 = float(l[1]), float(l[2]), float(l[3]), float(l[4])
+                    start = point(x1, y1)
+                    end = point(x2, y2)
+                    if len(l) > 5:
+                        counter_clockwise = l[5] == "1"
+                    ctr.add_component(Line(start, end, counter_clockwise))
+
+                elif l[0] == "C":
+                    c1, c2 = float(l[1]), float(l[2])
+                    r = float(l[3])
+                    if len(l) > 4:
+                        counter_clockwise = l[4] == "1"
+                    center = point(c1,c2)
+                    ctr.add_component(Circle(center, r, counter_clockwise))
+
+                elif l[0] == "Ac":
+                    x1, y1, x2, y2, c1, c2 = float(l[1]), float(l[2]), float(l[3]), float(l[4]), float(l[5]), float(l[6])
+                    if len(l) > 7:
+                        counter_clockwise = l[7] == "1"
+                    start = point(x1, y1)
+                    end = point(x2, y2)
+                    center =point(c1, c2)
+                    ctr.add_component(Arc(start, end, center, counter_clockwise))
+
+                elif l[0] == "A3":
+                    x1, y1, x2, y2, x3, y3 = float(l[1]), float(l[2]), float(l[3]), float(l[4]), float(l[5]), float(l[6])
+                    start = point(x1, y1)
+                    mid = point(x2, y2)
+                    end = point(x3, y3)
+                    ctr.add_component(Arc.from_3_points(start, mid, end))
+        return ctr
+
+
 
 
 
 
 if __name__ == "__main__":
-    p1 = point(4.0, 2.0)
-    p2 = point(-4.0, 2.0)
-    p3 = point(-6.0, 0.0)
-    p4 = point(-4.0, -2.0)
-    p5 = point(4.0, -2.0)
-    p6 = point(6.0, 0.0)
+    obj = Contour.read_file("test.txt")
 
 
-    circle1 = Circle(point(0.0,0.0), 1.0)
-    # circle1.discretize(6, False)
-
-    line1 = Line(p1, p2)
-    arc2 = Arc.from_3_points(p2, p3, p4)
-    line3 = Line(p4, p5)
-    arc4 = Arc.from_3_points(p5, p6, p1)
-
-    obj = Contour()
-    obj_c = Contour()
-
-    obj.add_component(line1)
-    obj.add_component(arc2)
-    obj.add_component(line3)
-    obj.add_component(arc4)
-
-    obj_c.add_component(circle1)
-
-
-    
-    fig = plt.figure(figsize=(1000,1000,"px"))
+    fig = plt.figure(figsize=(10,10), dpi=100)
     ax = fig.add_subplot(111)
 
-    obj.discretize_size_lines(10.0)
-    obj_c.discretize_n_lines(6, False)
+    obj.discretize_n_lines(10)
 
+    obj.rotate(np.pi/2)
+    obj.translate(1.0, 1.0)
     d = True
     if d:
         obj.plot_discretized(ax, True)
-        obj_c.plot_discretized(ax, True)
     else:
         obj.plot(ax)
-        obj_c.plot(ax)
 
-    ax.set_ybound(-6.5, 6.5)
-    ax.set_xbound(-6.5, 6.5)
+    ax.set_ybound(-8, 8)
+    ax.set_xbound(-8, 8)
     plt.show()
