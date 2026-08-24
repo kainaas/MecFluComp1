@@ -212,6 +212,7 @@ class Contour:
         self.components.append(component)
 
     def discretize_n_lines(self, n_segments: int):
+        self.lines = []
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
                 comp.discretize(n_segments, comp.counter_clockwise)
@@ -221,6 +222,7 @@ class Contour:
             else: self.lines.append(comp)
 
     def discretize_size_lines(self, max_size: float):
+        self.lines = []
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
                 arc_length = comp.get_arc_length()
