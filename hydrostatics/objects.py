@@ -23,6 +23,7 @@ class Line:
         self.x1 = x1
         self.x2 = x2
         self.vec = x2 - x1
+        self.normal_counter_clock = normal_counter_clock
         normal = np.array([self.vec[1],
                                 -self.vec[0]
                                 ])
@@ -43,6 +44,7 @@ class Line:
         self.x1 = matrix @ self.x1
         self.x2 = matrix @ self.x2
         self.normal = matrix @ self.normal
+        self.vec = self.x2 - self.x1
 
     def plot(self, ax: matplotlib.axes, normal: bool=False):
         ax.plot([self.x1[0], self.x2[0]], [self.x1[1], self.x2[1]])
@@ -204,9 +206,12 @@ class Arc(Circle):
 
 '''A set of lines and arcs'''
 class Contour:
-    def __init__(self):
+    def __init__(self, density: float = 1.0):
+        self.density = density
         self.components = []
         self.lines = []
+        self.pos = np.zeros((2,))
+        self.theta = 0.0
 
     def add_component(self, component):
         self.components.append(component)
@@ -248,20 +253,28 @@ class Contour:
             l.plot(ax, normal)
 
     def translate(self, x_step: float, y_step: float):
+        p = point(x_step, y_step)
+        self.pos = self.pos + p
         for comp in self.components:
             comp.translate(x_step, y_step)
 
     def rotate(self, theta: float):
         s = np.sin(theta)
         c = np.cos(theta)
+        self.theta += theta
         mat = np.array([[c, -s], [s, c]])
         for comp in self.components:
             comp.rotate(mat)
 
+    def reset_position(self):
+        self.pos = np.zeros((2,))
+
+    def reset_angle(self):
+        self.theta = 0.0
 
     @classmethod
-    def read_file(cls, file):
-        ctr = cls()
+    def read_file(cls, file, density:float = 1.0):
+        ctr = cls(density)
         with open(file, 'r') as f:
             for line in f:
                 counter_clockwise = 1
@@ -312,12 +325,13 @@ class Contour:
 
 
 if __name__ == "__main__":
-    obj = Contour.read_file("test.txt")
+    obj = Contour.read_file("objects/test.txt")
 
 
     fig = plt.figure(figsize=(10,10), dpi=100)
     ax = fig.add_subplot(111)
-
+    p1 = point(0.0,0.0)
+    print(type(p1[1]))
     obj.discretize_n_lines(10)
 
     obj.rotate(np.pi/2)
