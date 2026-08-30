@@ -1,3 +1,6 @@
+import sys
+sys.path.append("./..")
+
 from objects import *
 from quadrature import *
 from liquid import *
@@ -9,7 +12,7 @@ import matplotlib.pyplot as plt
 
 water = Liquid()
 
-obj = Contour.read_file("objects/lmacc.txt", 0.5)
+obj = Contour.read_file("../objects/lmacc.txt", 0.5)
 
 obj.discretize_n_lines(1000)
 
@@ -24,32 +27,40 @@ print("volume: ", volume)
 print("mass center: ", cm)
 
 
-solution = Newton_FDM(obj, water, 0.0, - np.pi / 4, 0.001, 0.001, 1e-4)
+theta0 = - np.pi 
+b0 = 0.0
+db2 = 1e-4
+dtheta = 1e-4
+tol = 1e-11
+
+solution = Newton_FDM(obj, water, b0, theta0, dtheta, db2, tol, verbose=True)
 
 weight = calc_weight(obj)
 BF = int_bouyant_contour(obj, water)
 torque = int_torque_contour(obj, water)
 
-print("Solution:", solution)
+print("")
+print("Solution: theta = ", solution[0], "; b2 = ", solution[1])
 print("Weight: ", weight)
 print("Bouyant force: ", BF)
 print("Torque: ", torque)
 
-obj.discretize_n_lines(10)
-
-
 fig = plt.figure(figsize=(20,10), dpi=100)
-ax = fig.add_subplot(121)
-# ax.set_xlim(-15.0, 15.0)
-# ax.set_ylim(-15.0, 15.0)
-ax.grid(True)
-obj.plot_discretized(ax, True)
+
 
 ax2 = fig.add_subplot(122)
-# ax2.set_xlim(-15.0, 15.0)
-# ax2.set_ylim(-15.0, 15.0)
+ax2.set_aspect('equal', adjustable='box')
 ax2.grid(True)
 obj.plot(ax2)
+ax2.scatter(0.0, solution[1])
+
+ax = fig.add_subplot(121)
+ax.set_aspect('equal', adjustable='box')
+ax.grid(True)
+ax.scatter(cm[0], cm[1])
+rigid_transformation(obj, 0.0, cm[1])
+obj.translate(cm[0], 0.0)
+obj.plot(ax)
 
 
 plt.show()

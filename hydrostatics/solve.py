@@ -106,6 +106,13 @@ def Newton_FDM(
     cm_last = int_cm_contour(ctr)
     F_last = point(F1(ctr, liquid, weight), F2(ctr, liquid, cm_last))
 
+    if verbose:
+        print("\n==================================================")
+        print("Initiating Newton iteration with finite differences")
+        print("tol:", tol, "; max iterations:", max_it)
+        print("theta0 =", theta0, "; b0 =", b0, "; dtheta =", dtheta, "; db2 =", db2)
+        print("==================================================")
+
     for i in range(max_it):
         J = calc_jacobian(ctr, liquid, dtheta, db2, weight, cm_last)
 
@@ -117,10 +124,26 @@ def Newton_FDM(
 
         F_now = point(F1(ctr, liquid, weight), F2(ctr, liquid, cm_now))
         
-        if i == max_it - 1:
-            print("Delta: ", delta)
-            return x_now
-        if np.linalg.norm(delta) < tol and np.linalg.norm(F_now) < tol:
+        if verbose:
+            print("Iteration =", i)
+            print("theta =", x_now[0], "; b2 =", x_now[1])
+            print("F values:", F_now)
+            print("==================================================")
+
+
+        if (np.linalg.norm(delta) < tol and np.linalg.norm(F_now) < tol) or i == max_it - 1:
+            if verbose:
+                print("\n==================================================")
+                if i == max_it - 1:
+                    print("Newton iteration terminated by reaching max iterations (", max_it, ")")
+                else:    
+                    print("Newton iteration terminated in", i, "iterations")
+                print("==================================================")
+                print("Solution: theta = ", x_now[0], "; b2 = ", x_now[1])
+                print("delta norm:", np.linalg.norm(delta))
+                print("F norm: ", np.linalg.norm(F_now))
+                print("F values: ", F_now)
+                print("==================================================")
             return x_now
 
         F_last = F_now
