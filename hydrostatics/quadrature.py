@@ -47,6 +47,10 @@ def int_volume_contour(ctr: Contour, n_points_quad: int = 3) -> float:
 def calc_weight(ctr: Contour) -> float:
     return - int_volume_contour(ctr) * const.g * ctr.density
 
+
+
+
+
 #=================================
 # Mass center integrals
 #=================================
@@ -65,6 +69,9 @@ def int_cm_contour(ctr: Contour, n_points_quad: int = 3) -> np.array:
         sum += int_cm_line(l, n_points_quad)
     sum /= 3*int_volume_contour(ctr, n_points_quad)
     return sum
+
+
+
 
 
 #=================================
@@ -122,6 +129,12 @@ def int_bouyant_contour(ctr: Contour, liquid: Liquid, n_points_quad: int = 3) ->
         sum += int_bouyant_line(l, liquid, n_points_quad)
     return sum
 
+
+
+
+
+
+
 #=================================
 # torque integrals
 #=================================
@@ -141,6 +154,14 @@ def int_torque_contour(ctr: Contour, liquid: Liquid, cm: np.ndarray | None = Non
     for l in ctr.lines:
         sum += int_torque_line(l, liquid, cm, n_points_quad)
     return sum
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     p1 = point(4.0, 2.0)
