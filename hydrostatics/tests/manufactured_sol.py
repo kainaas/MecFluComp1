@@ -18,20 +18,21 @@ obj = Contour.read_point_list("../objects/manufactured_sol.txt", 0.5, False)
 
 obj.discretize_n_lines(1000)
 
-volume = int_volume_contour(obj)
-cm = int_cm_contour(obj)
+volume = int_volume_optm(obj)
+cm = int_cm_optm(obj)
 
 print("volume: ", volume)
 print("mass center: ", cm)
 
 #Fully submerged
-obj.translate(0.0, -2.0)
-BF1 = BF = int_bouyant_contour(obj, water)
+obj.translate(0.0, -2.0, True)
+BF1 = int_bouyant_optm(obj, water)
 print("Bouyant force (fully submerged): ", BF1)
 #Partially submerged
-obj.translate(0.0, 1.0)
-BF2 = BF = int_bouyant_contour(obj, water)
+obj.translate(0.0, 1.0, True)
+BF2 = int_bouyant_optm(obj, water)
 print("Bouyant force (partially submerged): ", BF2)
+
 
 
 move_cm_to_origin(obj, reset_pos=True)
@@ -46,9 +47,9 @@ tol = 1e-14
 
 solution = Newton_FDM(obj, water, b0, theta0, dtheta, db2, tol, verbose=True)
 
-weight = calc_weight(obj)
-BF = int_bouyant_contour(obj, water)
-torque = int_torque_contour(obj, water)
+weight = calc_weight_optm(obj)
+BF = int_bouyant_optm(obj, water)
+torque = int_torque_optm(obj, water)
 
 print("")
 print("Solution: theta = ", solution[0], "; b2 = ", solution[1])

@@ -13,3 +13,7 @@ class Liquid:
             return 0.0
         else:
             return self.density * const.g * (self.y_inter - y)
+
+    def get_pressure_vec(self, y: np.array):
+        mask = y > self.y_inter
+        return self.density * const.g * np.where(y > self.y_inter, 0.0, self.y_inter - y)

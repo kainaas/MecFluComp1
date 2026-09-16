@@ -204,6 +204,19 @@ class Arc(Circle):
         
         
 
+def param(Lmatrix, xi:float):
+    ''' 
+        Returns the parametrization of each line in the matrix, with values in the interval [-1,1].
+        The returned matrix has dimensions (2, num_lines).
+        The structured used in this matrix is described in the contour class
+    '''
+    tmp = np.zeros((2, len(Lmatrix)))
+        
+    tmp = (1-xi)/2* Lmatrix[0:2, :] + (1+xi)/2 * Lmatrix[3:5, :]
+
+    return tmp
+
+
 '''A set of lines and arcs'''
 class Contour:
     def __init__(self, density: float = 1.0):
@@ -212,10 +225,27 @@ class Contour:
         self.lines = []
         self.pos = np.zeros((2,))
         self.theta = 0.0
+        self.Lmatrix: np.array = None
+        self.Lnormals: np.array = None
 
     def add_component(self, component):
         self.components.append(component)
 
+
+    def _assemble_lines_matrix(self):
+        ''' 
+            First 2 lines are the coordinates of first point of each line. 
+            Fourth and fifth line are the coordinates of the second point of each line.
+            This structure makes us able to apply a rigid transformation as a unique matrix multiplication
+        '''
+        size = len(self.lines)
+        self.Lmatrix = np.ones((6, size)) 
+        self.Lnormals = np.zeros((2,size))
+        for i, l in enumerate(self.lines):
+            self.Lmatrix[0:2, i] = l.x1
+            self.Lmatrix[3:5, i] = l.x2
+            self.Lnormals[:, i] = l.normal
+        
     def discretize_n_lines(self, n_segments: int):
         self.lines = []
         for _, comp in enumerate(self.components):
@@ -225,6 +255,7 @@ class Contour:
                     self.lines.append(l)
 
             else: self.lines.append(comp)
+        self._assemble_lines_matrix()
 
     def discretize_size_lines(self, max_size: float):
         self.lines = []
@@ -241,6 +272,15 @@ class Contour:
                     self.lines.append(l)
 
             else: self.lines.append(comp)
+        self._assemble_lines_matrix()
+
+
+    def param(self, xi: float) -> np.array:
+        ''' 
+            Returns the parametrization of each line in the contour, with values in the interval [-1,1].
+            The returned matrix has dimensions (2, num_lines).
+        '''
+        return param(self.Lmatrix, xi)
 
     def plot(self, ax: matplotlib.axes, n_line_segments: int = 100, normal:bool = False):
         for _, comp in enumerate(self.components):
@@ -248,29 +288,73 @@ class Contour:
                 comp.plot(ax, n_line_segments)
             else: comp.plot(ax, normal)
 
-    def plot_discretized(self, ax: matplotlib.axes, normal: bool = False):
+    def plot_discretized_original(self, ax: matplotlib.axes, normal: bool = False):
         for _, l in enumerate(self.lines):
             l.plot(ax, normal)
 
-    def translate(self, x_step: float, y_step: float):
+    def plot_discretized(self, ax: matplotlib.axes):
+        x = []
+        y = []
+        for i in range(len(self.lines)):
+            x.append(self.Lmatrix[0, i])
+            x.append(self.Lmatrix[3, i])
+            y.append(self.Lmatrix[1, i])
+            y.append(self.Lmatrix[4, i])
+        ax.plot(x, y)
+
+
+    def translate(self, x_step: float, y_step: float, translate_abstraction: bool = False):
         p = point(x_step, y_step)
         self.pos = self.pos + p
-        for comp in self.components:
-            comp.translate(x_step, y_step)
 
-    def rotate(self, theta: float):
+        if translate_abstraction:
+            for comp in self.components:
+                comp.translate(x_step, y_step)
+        
+        if not self.Lmatrix is None:
+            M = np.array([
+                [1.0, 0.0, x_step],
+                [0.0, 1.0, y_step],
+                [0.0, 0.0, 1.0]
+            ])
+            self.Lmatrix = np.vstack([M @ self.Lmatrix[0:3, :], M @ self.Lmatrix[3:, :]])
+
+
+    def rotate(self, theta: float, rotate_abstraction: bool = False):
         s = np.sin(theta)
         c = np.cos(theta)
         self.theta += theta
-        mat = np.array([[c, -s], [s, c]])
-        for comp in self.components:
-            comp.rotate(mat)
+        if rotate_abstraction:
+            mat = np.array([[c, -s], [s, c]])
+            for comp in self.components:
+                comp.rotate(mat)
+
+        if not self.Lmatrix is None:
+            M = np.array([
+                [c, -s, 0.0],
+                [s, c, 0.0],
+                [0.0, 0.0, 1.0]
+            ])
+            self.Lmatrix = np.vstack([M @ self.Lmatrix[0:3, :], M @ self.Lmatrix[3:, :]])
+            self.Lnormals = M[0:2, 0:2] @ self.Lnormals
+
+    def apply_RT(self, matrix, rotation, x_step_total, y_step_total, theta):
+        ''' 
+            Apply a transformation composed f rotations and translations. The transformation is given in matrix
+        '''
+        p = point(x_step_total, y_step_total)
+        self.pos = self.pos + p
+        self.theta += theta
+        self.Lmatrix = np.vstack([matrix @ self.Lmatrix[0:3, :], matrix @ self.Lmatrix[3:, :]])
+        self.Lnormals = rotation[0:2, 0:2] @ self.Lnormals
+
 
     def reset_position(self):
         self.pos = np.zeros((2,))
 
     def reset_angle(self):
         self.theta = 0.0
+
 
     @classmethod
     def read_file(cls, file, density:float = 1.0):
@@ -342,23 +426,22 @@ class Contour:
 
 
 if __name__ == "__main__":
-    obj = Contour.read_file("objects/test.txt")
-
-
+    obj = Contour.read_file("objects/square.txt")
+    
     fig = plt.figure(figsize=(10,10), dpi=100)
     ax = fig.add_subplot(111)
     p1 = point(0.0,0.0)
     print(type(p1[1]))
     obj.discretize_n_lines(10)
-
-    obj.rotate(np.pi/2)
-    obj.translate(1.0, 1.0)
+    obj.translate(-1.0, -1.0)
+    obj.rotate(np.pi/4)
+    print(obj.Lnormals)
+    
     d = True
     if d:
-        obj.plot_discretized(ax, True)
+        obj.plot_discretized(ax)
     else:
         obj.plot(ax)
 
-    ax.set_ybound(-8, 8)
-    ax.set_xbound(-8, 8)
+    ax.set_aspect('equal', adjustable='box')
     plt.show()
