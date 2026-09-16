@@ -39,13 +39,13 @@ table_factors = []
 for i, n in enumerate(num_lines):
     obj = Contour.read_file("../objects/circle.txt")
     obj.discretize_n_lines(n)
-    volume_diff.append(np.abs(volume_true - int_volume_contour(obj)))
-    cm_diff.append(np.linalg.norm( cm_true - int_cm_contour(obj)))
-    weight_diff.append(np.abs(weight_true - calc_weight(obj)))
+    volume_diff.append(np.abs(volume_true - int_volume_optm(obj)))
+    cm_diff.append(np.linalg.norm( cm_true - int_cm_optm(obj)))
+    weight_diff.append(np.abs(weight_true - calc_weight_optm(obj)))
     
     move_cm_to_origin(obj, point(1.0,1.0), True)
-    torque_diff.append(np.abs(torque_true - int_torque_contour(obj, water)))
-    BF_diff.append(np.abs(BF_true - int_bouyant_contour(obj, water)))
+    torque_diff.append(np.abs(torque_true - int_torque_optm(obj, water)))
+    BF_diff.append(np.abs(BF_true - int_bouyant_optm(obj, water)))
 
     table.append([n, volume_diff[i], cm_diff[i], weight_diff[i], torque_diff[i], BF_diff[i]])
 
