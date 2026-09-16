@@ -2,3 +2,5 @@ concat func for contours
 
 implementar is_immersed_3D direito
 Modularizar Newton e colocar os criterios de parada
+
+readme avisando funções deprecated
