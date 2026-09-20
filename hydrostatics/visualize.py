@@ -17,6 +17,9 @@ def calc_F_output(
     n_points_b: int = 100,
     n_points_theta: int = 100
 ):
+    '''
+        Returns a matrix suited to be plotted in a colorbar. This matrix have values of F1 or F2 in function of theta and b2
+    '''
 
     t = False
     if type == "F1":
@@ -71,7 +74,11 @@ def map_F(
     n_points_theta: int = 100
 ):
     ''' 
-        Type may be "F1", "F2", "level", "quiver" or "combined"
+        Type may be "F1", "F2", "level", "quiver" or "combined". 
+        F1 and F2 plots these functions according to theta and b2
+        level plots the contour levels of both functions
+        quiver plots the vector field (F1, F2)
+        combined plots both the vector field and the contour levels.
     '''
     ax.set_xlabel(r"$\theta$")
     ax.set_ylabel(r"$b_2$")
@@ -184,6 +191,9 @@ def beautiful_plot(
     show: bool = False, 
     save: str | None = None
 ):
+    '''
+        Plots a figure with 4 subplots containing a plot of F1, F2, contour level and vector field.
+    '''
     fig = plt.figure(figsize=(2000, 1000, "px"))
     ax1 = fig.add_subplot(221)
     ax2 = fig.add_subplot(222)
@@ -206,8 +216,11 @@ def beautiful_plot(
 
     
 
-def make_gif(ctr: Contour, liquid: Liquid, result: result, interval: int = 33, show: bool = False, save:str | None = None):
-
+def make_gif(ctr: Contour, liquid: Liquid, result: Result, interval: int = 33, show: bool = False, save:str | None = None):
+    '''
+        Given a PVI solution, makes a gif of this solution. interval is the period of time in ms between each frame (33 is arround 30 fps).
+        Not recommended going aboe 30 fps
+    '''
     fig, ax = plt.subplots()
     fig.set_size_inches((10,10))
 

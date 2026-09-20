@@ -9,6 +9,9 @@ import const
 
 
 def calc_jacobian(ctr: Contour, liquid: Liquid, dtheta: float, db2: float, weight: float, cm: np.ndarray | None = None) -> np.array:
+    '''
+        Jacobian of the function F = (F1, F2)
+    '''
     if cm is None:
         cm = int_cm_contour(ctr)
 
@@ -53,7 +56,9 @@ def Newton_FDM(
         tol: float, max_it: int = 100,
         verbose: bool = False
 ) -> np.array:
-
+    '''
+        Calculates a equilibrium position using Newton's Method. The jacobian is calculated using FDM
+    '''
     weight = calc_weight_optm(ctr)
     x_last = point(theta0, b0)
     rigid_transformation(ctr, theta0, b0)

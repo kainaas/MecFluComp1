@@ -7,6 +7,11 @@ from liquid import *
 import const
 
 class Gauss_Legendre:
+    '''
+        This class hlds the implementation of Gauss Legendre quadrature.
+        Supports quadratures with 2 or 3 points and functions ranging from
+        [-1,1]
+    '''
     points_2 = np.array([-1.0 / np.sqrt(3), 1.0 / np.sqrt(3)])
     Ak_2 = np.array([1.0, 1.0])
 
@@ -15,6 +20,9 @@ class Gauss_Legendre:
 
     @classmethod
     def integrate(cls, f, n_points_quad: int = 3) -> float:
+        '''
+            Integrate f using n_points_quad
+        '''
         sum = 0.0
         tmp = []
         if n_points_quad == 2:
@@ -29,6 +37,10 @@ class Gauss_Legendre:
 
     @classmethod
     def integrate_vector(cls, f, n_points_quad: int = 3) ->float:
+        '''
+            Integrate f using n_points_quad. f must return a 1 x num_points_used array where each collumn
+            is the function in a point.
+        '''
         sum = 0.0
         tmp = []
         if n_points_quad == 2:
@@ -48,11 +60,17 @@ class Gauss_Legendre:
 # Volume integrals
 #=================================
 def int_volume_optm(ctr: Contour, n_points_quad: int = 3):
+    '''
+        Calculates the volume of an object.
+    '''
     g: callable
     g = lambda xi : np.array((ctr.param(xi)[0, :] * ctr.Lnormals[0, :] + ctr.param(xi)[1, :] * ctr.Lnormals[1, :]) * np.linalg.norm((ctr.Lmatrix[0:2, :] - ctr.Lmatrix[3:5, :])/2,axis=0))
     return Gauss_Legendre.integrate_vector(g, n_points_quad) / 2
 
 def calc_weight_optm(ctr: Contour) -> float:
+    '''
+        Calculates the weight of an object , considering it has constant density
+    '''
     return - int_volume_optm(ctr) * const.g * ctr.density
 
 
@@ -62,6 +80,9 @@ def calc_weight_optm(ctr: Contour) -> float:
 # Mass center integrals
 #=================================
 def int_cm_optm(ctr: Contour, n_points_quad: int = 3) -> np.array:
+    '''
+        Calculates the center of mass of an object.
+    '''
     g1 = lambda xi: np.array((ctr.param(xi)[0,:] * ctr.Lnormals[0,:] + ctr.param(xi)[1,:] * ctr.Lnormals[1,:]) * np.linalg.norm((ctr.Lmatrix[0:2, :] - ctr.Lmatrix[3:5, :])/2,axis=0) * ctr.param(xi)[0,:])
     g2 = lambda xi: np.array((ctr.param(xi)[0,:] * ctr.Lnormals[0,:] + ctr.param(xi)[1,:] * ctr.Lnormals[1,:]) * np.linalg.norm((ctr.Lmatrix[0:2, :] - ctr.Lmatrix[3:5, :])/2,axis=0) * ctr.param(xi)[1,:])
     array = []
@@ -76,6 +97,9 @@ def int_cm_optm(ctr: Contour, n_points_quad: int = 3) -> np.array:
 # Segment lines
 #=================================
 def get_segment_under_liquid(l: Line, liquid: Liquid) -> Line:
+    '''
+        Gets the part of the line l that is submerged in the liquid
+    '''
     #points with y relative to the y_interface
     x_start_rel = l.x1.copy()
     x_start_rel[1] = x_start_rel[1] - liquid.y_inter
@@ -113,6 +137,10 @@ def get_segment_under_liquid(l: Line, liquid: Liquid) -> Line:
 
 
 def segment_optm(ctr: Contour, liquid: Liquid):
+    '''
+        Given a Contour, returns a matrix with the same structure of the Contour lines matrix
+        with all the segments that are under the liquid.
+    '''
     x_start_rel = ctr.Lmatrix[0:2, :] - liquid.y_inter
     x_end_rel = ctr.Lmatrix[3:5, :] - liquid.y_inter
 
@@ -167,6 +195,9 @@ def segment_optm(ctr: Contour, liquid: Liquid):
 # buoyant force integrals
 #=================================
 def int_bouyant_optm(ctr: Contour, liquid: Liquid, n_points_quad: int = 3) -> float:
+    '''
+        Calculates the bouyant force of an object.
+    '''
     lines, normals = segment_optm(ctr, liquid)
     g = lambda xi: - liquid.get_pressure_vec(param(lines, xi)[1,:]) * normals[1,:] * np.linalg.norm((lines[0:2, :] - lines[3:5, :])/2,axis=0)
     return Gauss_Legendre.integrate_vector(g, n_points_quad)
@@ -180,6 +211,9 @@ def int_bouyant_optm(ctr: Contour, liquid: Liquid, n_points_quad: int = 3) -> fl
 # torque integral
 #=================================
 def int_torque_optm(ctr: Contour, liquid: Liquid, cm: np.ndarray | None = None, n_points_quad: int = 3) -> float:
+    '''
+        Calculates the torque of an object.
+    '''
     if cm is None:
         cm = int_cm_optm(ctr, n_points_quad)
     lines, normals = segment_optm(ctr, liquid)
@@ -193,6 +227,9 @@ def int_torque_optm(ctr: Contour, liquid: Liquid, cm: np.ndarray | None = None, 
 #=================================
 
 def int_MI_optm(ctr: Contour, cm: np.ndarray | None = None, n_points_quad: int = 3) -> float:
+    '''
+        Calculates the moment of inertia of an object.
+    '''
     if cm is None:
         cm = int_cm_optm(ctr, n_points_quad)
     g = lambda xi: ((param(ctr.Lmatrix, xi)[0,:] - cm[0])**3 * ctr.Lnormals[0,:] + (param(ctr.Lmatrix, xi)[1,:] - cm[1])**3 * ctr.Lnormals[1,:]) * np.linalg.norm((ctr.Lmatrix[0:2, :] - ctr.Lmatrix[3:5, :])/2,axis=0)
@@ -202,9 +239,15 @@ def int_MI_optm(ctr: Contour, cm: np.ndarray | None = None, n_points_quad: int =
 #F2 = Tau
 
 def F1(ctr: Contour, liquid: Liquid, weight: float) ->float:
+    '''
+        Returns the forces applied in the y-direction. +y upwards
+    '''
     return weight + int_bouyant_optm(ctr, liquid)
 
 def F2(ctr: Contour, liquid: Liquid, cm: np.ndarray | None = None)  -> float:
+    '''
+        Returns the rotational forces
+    '''
     if cm is None:
         cm = int_cm_optm(ctr)
     return int_torque_optm(ctr, liquid, cm)

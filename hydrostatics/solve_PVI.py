@@ -1,6 +1,3 @@
-import sys
-sys.path.append("./..")
-
 from objects import *
 from quadrature import *
 from liquid import *
@@ -11,26 +8,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from math import floor
-
-#Classe para retornar o resultado dos métodos
-class Resultado:
+ 
+class Result:
+    '''
+        Class that holds the information of a PVI solution
+    '''
     def __init__(self, qnt_passos, h, u, t):
-        self.qnt_passos = qnt_passos #Quantidade de passos executada
-        self.h = h #Passo de t
-        self.u = u #Vetor com a solução
-        self.t = t #Vetor com os valores do tempo utilizados. Note que  t_final <= t[-1] < t_final + h
+        self.qnt_passos = qnt_passos #Amount of steps executed
+        self.h = h #Step of t
+        self.u = u #Vector with the solutiom
+        self.t = t #Vector with the values of time used. Note that  t_final <= t[-1] < t_final + h
 
-def calcula_qnt_passos(t0, t_final, h):
+def calc_amount_steps(t0, t_final, h):
     tam_intervalo = t_final - t0
 
     qnt_passos = tam_intervalo/h
     if qnt_passos != floor(qnt_passos): qnt_passos = floor(qnt_passos) + 1
     else: qnt_passos = int(qnt_passos)
-    qnt_passos += 1 #Acrescentar u0 no vetor solução
+    qnt_passos += 1 #Add u0 to the solution vector
     return qnt_passos
 
-def inicializa_metodo(qnt_passos, t0, u0):
-    u = np.zeros((len(u0), qnt_passos)) #Cria uma matriz em que as colunas são a solução em um determinado tempo e as linhas são a solução de uma variável no tempo todo
+def initialize_method(qnt_passos, t0, u0):
+    u = np.zeros((len(u0), qnt_passos)) #Creates a matrix in which the collumns are the solution in a determined time 
+    #and the lines are the solution of a variable across time
     t = np.zeros(qnt_passos)
 
     u[:, 0] = u0
@@ -38,19 +38,19 @@ def inicializa_metodo(qnt_passos, t0, u0):
     return u, t
 
 def euler_explicito(t0, t_final, h, u0: np.array, f):
-    qnt_passos = calcula_qnt_passos(t0, t_final, h)
-    u, t = inicializa_metodo(qnt_passos, t0, u0)
+    qnt_passos = calc_amount_steps(t0, t_final, h)
+    u, t = initialize_method(qnt_passos, t0, u0)
 
     for i in range(1,qnt_passos):
         t[i] = t[i-1] + h
         u[:, i] = u[:, i-1] + h*f(u[:, i-1], t[i-1])
 
-    return Resultado(qnt_passos, h, u, t)
+    return Result(qnt_passos, h, u, t)
      
 
 def RK4(t0, t_final, h, u0: np.array, f):
-    qnt_passos = calcula_qnt_passos(t0, t_final, h)
-    u, t = inicializa_metodo(qnt_passos, t0, u0)
+    qnt_passos = calc_amount_steps(t0, t_final, h)
+    u, t = initialize_method(qnt_passos, t0, u0)
 
     for i in range(1,qnt_passos):
         t[i] = t[i-1] + h
@@ -60,7 +60,7 @@ def RK4(t0, t_final, h, u0: np.array, f):
         K4 = f(u[:, i-1] + h*K3, t[i-1] + h)
         u[:,i] = u[:,i-1] + (h/6)*(K1 + 2*K2 + 2*K3 + K4)
 
-    return Resultado(qnt_passos, h, u, t)
+    return Result(qnt_passos, h, u, t)
 
 
 def f_aux(
@@ -74,6 +74,9 @@ def f_aux(
     moment_inertia: float,
     gamma:float
 ):
+    '''
+        Function f such that u' = f in the dynamics of a floating object
+    '''
     rigid_transformation(ctr, u[2], u[0])
     return np.array([
         u[1],
@@ -86,7 +89,7 @@ def f_aux(
 
 if __name__ == "__main__":
     #obj = Contour.read_point_list("objects/manufactured_sol.txt", 0.5, False)
-    obj = Contour.read_file("objects/test.txt", 0.5)
+    obj = Contour.read_file("objects/example.txt", 0.5)
     obj.discretize_n_lines(100)
     water = Liquid()
     gamma = 0.1

@@ -3,6 +3,9 @@ from quadrature import *
 import numpy as np
 
 def M_translation(x_step: float, y_step: float):
+    '''
+        Creates a transformation of translation
+    '''
     return np.array([
         [1.0, 0.0, x_step],
         [0.0, 1.0, y_step],
@@ -10,6 +13,9 @@ def M_translation(x_step: float, y_step: float):
     ])
 
 def M_rotation(theta: float):
+    '''
+        Creates a transformation of rotation
+    '''
     c = np.cos(theta)
     s = np.sin(theta)
     return np.array([
@@ -20,6 +26,11 @@ def M_rotation(theta: float):
 
 
 def move_cm_to_origin(ctr: Contour, cm: np.ndarray | None = None, reset_pos: bool = False, abstraction: bool = False):
+    '''
+        Moves the centr of mass to the origin. The current cm can be inputed, sparing some calculations.
+        If reset_pos is true, this sets the new reference position for the object.
+        If abstraction is true, also moves the abstraction.
+    '''
     if cm is None:
         cm = int_cm_optm(ctr)
     ctr.translate(-cm[0], -cm[1], abstraction)
@@ -34,6 +45,11 @@ def rigid_transformation(
     b2: float,
     cm: np.ndarray | None = None,
 ):
+    '''
+        Moves the object to y=b2 and theta = theta.
+        center of mass can be given to spare calculations.
+        
+    '''
     if cm is None:
         cm = int_cm_optm(ctr)
 

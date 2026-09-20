@@ -16,9 +16,17 @@ def angle_origin_vector(x: np.ndarray) -> float:
     return theta
 
 
-'''Represents a line in 2D. x1 and x2 represents the begin and end points of the line. The normal vector is considering that objects are ran counter-clockwise. The points list stores the points used in quadratures.'''
+
 class Line:
+    '''
+        Represents a line in 2D. x1 and x2 represents the begin and end points of the line. 
+        The normal vector is considering that objects are ran counter-clockwise. 
+        The points list stores the points used in quadratures.
+    '''
     def __init__(self, x1: np.array, x2: np.array, normal_counter_clock: bool = True):
+        '''
+            Initialize a line. The normal_counter_clock tells which of the two possible normals is the one used
+        '''
         self.x1 = x1
         self.x2 = x2
         self.vec = x2 - x1
@@ -30,22 +38,34 @@ class Line:
         if normal_counter_clock == False:
             self.invert_normal()
 
-    def invert_normal(self): #When it's needed to invert the normal, i.e., points inside object. If the object is not simply conected
+    def invert_normal(self): 
+        '''
+            When it's needed to invert the normal, i.e., points inside object. If the object is not simply conected
+        '''
         for i in range(2):
             self.normal[i] = -self.normal[i]
 
     def translate(self, x_step: float, y_step: float):
+        '''
+            Move a line by relative coordinates (x_step, y_step)
+        '''
         p = point(x_step, y_step)
         self.x1 = self.x1 + p
         self.x2 = self.x2 + p
 
     def rotate(self, matrix):
+        '''
+            Rotate a line by theta radians
+        '''
         self.x1 = matrix @ self.x1
         self.x2 = matrix @ self.x2
         self.normal = matrix @ self.normal
         self.vec = self.x2 - self.x1
 
     def plot(self, ax: matplotlib.axes, normal: bool=False):
+        '''
+            Given the axes ax, plot the line in this ax. If normal is true, plot the normal arrow
+        '''
         ax.plot([self.x1[0], self.x2[0]], [self.x1[1], self.x2[1]])
         if normal:
             midpoint = (self.x1 + self.x2)/2
@@ -60,8 +80,12 @@ class Line:
 
 
 
-'''Represents a full circle in 2D. Has a lines list to store a discretized/segmented circle'''
+
 class Circle:
+    '''
+        Represents a full circle in 2D. 
+        Has a lines list to store a discretized/segmented circle
+    '''
     def __init__(self, center: np.array, radius: float, counter_clockwise: bool = True):
         self.c = center
         self.r = radius
@@ -69,10 +93,17 @@ class Circle:
         self.counter_clockwise = counter_clockwise
 
     def get_points_eq_space(self, n_segments: int):
+        '''
+            Gets the points used in a uniform segmentation of a circle in n_segments
+        '''
         pace = 2*np.pi / (n_segments)
         return np.array([[self.c[0] + self.r*np.cos(i*pace), self.c[1] + self.r*np.sin(i*pace)] for i in range(n_segments+1)])
 
     def discretize(self, n_segments: int, counter_clockwise: bool = True):
+        '''
+            Discretize the circle in n_segments. These segments are appended in the lines list.
+            Resets the existing lines list before discretizing
+        '''
         self.lines = []
         points = self.get_points_eq_space(n_segments)
         for i in range(n_segments):
@@ -80,29 +111,49 @@ class Circle:
             self.lines.append(l)
 
     def get_angular_size(self):
+        '''
+            The amount of radians that there is in a full circle
+        '''
         return 2* np.pi
 
     def get_arc_length(self):
+        '''
+            Arc length of the circle
+        '''
         return self.r * self.get_angular_size()
 
     def translate(self, x_step: float, y_step: float):
-            p = point(x_step, y_step)
-            self.c = self.c + p
-            if len(self.lines) > 0:
-                for l in self.lines:
-                    l.translate(x_step, y_step)
+        '''
+             Moves a circle by relative coordinates (x_step, y_step).
+             All of its lines are moved too, if there are any
+        '''
+        p = point(x_step, y_step)
+        self.c = self.c + p
+        if len(self.lines) > 0:
+            for l in self.lines:
+                l.translate(x_step, y_step)
 
     def rotate(self, matrix):
-            self.c = matrix @ self.c
-            if len(self.lines) > 0:
-                for l in self.lines:
-                    l.rotate(matrix)
+        '''
+            Rotate a circle by theta radians.
+            All of its lines are moved too, if there are any
+        '''
+        self.c = matrix @ self.c
+        if len(self.lines) > 0:
+            for l in self.lines:
+                l.rotate(matrix)
 
     def plot(self, ax: matplotlib.axes, n_line_segments: int = 100):
+        '''
+            Plots the circle using n_line_segments to approximate it
+        '''
         points = self.get_points_eq_space(n_line_segments)
         ax.plot(points[:,0], points[:,1])
 
     def plot_discretized(self, ax: matplotlib.axes, normal: bool = False):
+        '''
+            Deprecated. Plot hte discretized circle. Substituded by the new Contour representation
+        '''
         for i, l in enumerate(self.lines):
             l.plot(ax, normal)
     
@@ -110,9 +161,16 @@ class Circle:
 
 
 
-'''Specialization of a Circle'''
+
 class Arc(Circle):
+    '''
+        Specialization of a Circle. An arc of circle can be defined by an starting point, an end point, 
+        a direction that the arc follows between the starting, a radius and an end point and a normal direction
+    '''
     def __init__(self, x_start: np.array, x_end: np.array, center: np.array, counter_clockwise_normal: bool, counter_clockwise: bool = True):
+        '''
+            Starts the arc in the raw way.
+        '''
         self.x1 = x_start
         self.x2 = x_end
         self.counter_clockwise_draw = counter_clockwise
@@ -121,7 +179,9 @@ class Arc(Circle):
 
     @classmethod
     def from_3_points(cls, x_start: np.array, x_middle: np.array, x_end: np.array, counter_clockwise_normal: bool = True):
-        
+        '''
+            Starts an Arc using 3 points. The order of x_start, x_middle and x_end matters. 
+        '''
         v1 = x_middle - x_start
         v2 = x_end - x_start
         cross_prod = cross(v1, v2)
@@ -148,6 +208,9 @@ class Arc(Circle):
     
 
     def get_angular_size(self):
+        '''
+            Overrides the get_angular_size() of Circle. Returns the angular size in radians of the Arc
+        '''
         v1 = self.x1 - self.c
         v2 = self.x2 - self.c
 
@@ -161,6 +224,9 @@ class Arc(Circle):
         return diff
 
     def get_points_eq_space(self, n_segments: int):
+        '''
+            Gets the points used in a uniform segmentation of the arc.
+        '''
         diff = self.get_angular_size()
 
         if diff < 1e-12: 
@@ -205,9 +271,9 @@ class Arc(Circle):
 
 def param(Lmatrix, xi:float):
     ''' 
-        Returns the parametrization of each line in the matrix, with values in the interval [-1,1].
+        Returns the linear parametrization of each line in the matrix of a Contour, with values in the interval [-1,1].
         The returned matrix has dimensions (2, num_lines).
-        The structured used in this matrix is described in the contour class
+        The structure used in this matrix is described in the contour class
     '''
     tmp = np.zeros((2, len(Lmatrix)))
         
@@ -218,8 +284,20 @@ def param(Lmatrix, xi:float):
 
 
 
-'''A set of lines and arcs'''
+
 class Contour:
+    '''
+        A set of lines, arcs and circles. It's the representation of an object. Has a list of these components
+        and a list of lines. The list of lines holds all discretization lines and natural object lines.
+        Holds a referential position and angle.
+
+        The lines of discretization are also represented in a matrix. this matrix has shape (6, num_lines).
+        The first two rows are the beginning points of the lines. The 4th and 5th rows are the ending points
+        of each line. The 3rd and 6th rows are the homogenous coordinate for the beggining and ending points respectively.
+        This allows for more optimized rigid transformations.
+
+        The normals are also stored this way, in a matrix of shape (3, num_lines).
+    '''
     def __init__(self, density: float = 1.0):
         self.density = density
         self.components = []
@@ -230,6 +308,9 @@ class Contour:
         self.Lnormals: np.array = None
 
     def add_component(self, component):
+        '''
+            Adds a component to the Contour list of components
+        '''
         self.components.append(component)
 
 
@@ -248,6 +329,9 @@ class Contour:
             self.Lnormals[:, i] = l.normal
         
     def discretize_n_lines(self, n_segments: int):
+        '''
+            Discretize each possible component with n_segments each
+        '''
         self.lines = []
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
@@ -259,6 +343,9 @@ class Contour:
         self._assemble_lines_matrix()
 
     def discretize_size_lines(self, max_size: float):
+        '''
+            Discretize the lines using a max_size
+        '''
         self.lines = []
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
@@ -284,16 +371,26 @@ class Contour:
         return param(self.Lmatrix, xi)
 
     def plot(self, ax: matplotlib.axes, n_line_segments: int = 100, normal:bool = False):
+        '''
+            Plots each component. Kind of deprecated. Can plot the position and rotation wrong if they are not used
+            thinking in plot the non-discretized object
+        '''
         for _, comp in enumerate(self.components):
             if isinstance(comp, Circle):
                 comp.plot(ax, n_line_segments)
             else: comp.plot(ax, normal)
 
     def plot_discretized_original(self, ax: matplotlib.axes, normal: bool = False):
+        '''
+            Plots each line of the discretized object. Deprecated.
+        '''
         for _, l in enumerate(self.lines):
             l.plot(ax, normal)
 
     def plot_discretized(self, ax: matplotlib.axes):
+        '''
+            Plots the discretized object
+        '''
         x = []
         y = []
         for i in range(len(self.lines)):
@@ -305,6 +402,10 @@ class Contour:
 
 
     def translate(self, x_step: float, y_step: float, translate_abstraction: bool = False):
+        '''
+            Moves the matrix representation of the object by (x_step, y_step). 
+            If translate_abstraction is true, also move all components objects
+        '''
         p = point(x_step, y_step)
         self.pos = self.pos + p
 
@@ -322,6 +423,10 @@ class Contour:
 
 
     def rotate(self, theta: float, rotate_abstraction: bool = False):
+        '''
+            Rotates the matrix representation of the object by theta radians. 
+            If translate_abstraction is true, also rotate all components objects
+        '''
         s = np.sin(theta)
         c = np.cos(theta)
         self.theta += theta
@@ -341,7 +446,9 @@ class Contour:
 
     def apply_RT(self, matrix, rotation, x_step_total, y_step_total, theta):
         ''' 
-            Apply a transformation composed f rotations and translations. The transformation is given in matrix
+            Apply a transformation composed f rotations and translations. The transformation is given in matrix.
+            Must input the x_step_total, y_step_total and theta of the transformation, so the position and angle
+            variables can be refreshed
         '''
         p = point(x_step_total, y_step_total)
         self.pos = self.pos + p
@@ -369,6 +476,9 @@ class Contour:
 
     @classmethod
     def read_file(cls, file, density:float = 1.0):
+        '''
+            File example in objects/example.txt
+        '''
         ctr = cls(density)
         with open(file, 'r') as f:
             for line in f:
@@ -416,6 +526,10 @@ class Contour:
 
     @classmethod
     def read_point_list(cls, file, density: float = 1.0, counter_clockwise: bool = True):
+        '''
+            Reads a point list and assemble a contour with this line list. counter_clockwise dictates the
+            direction the points are wandered. The points must be sequential. Does not suport objects with holes.
+        '''
         ctr = cls(density)
         curr_line = []
         next_line = []
