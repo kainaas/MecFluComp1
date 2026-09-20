@@ -9,7 +9,6 @@ def cross(x1: np.array, x2: np.array):
 def point(x1: float, x2: float) -> np.array:
     return np.array([x1, x2])
 
-
 def angle_origin_vector(x: np.ndarray) -> float:
     theta = np.arctan2(x[1], x[0])
     if theta < 0:
@@ -217,6 +216,8 @@ def param(Lmatrix, xi:float):
     return tmp
 
 
+
+
 '''A set of lines and arcs'''
 class Contour:
     def __init__(self, density: float = 1.0):
@@ -300,7 +301,7 @@ class Contour:
             x.append(self.Lmatrix[3, i])
             y.append(self.Lmatrix[1, i])
             y.append(self.Lmatrix[4, i])
-        ax.plot(x, y)
+        return ax.plot(x, y)
 
 
     def translate(self, x_step: float, y_step: float, translate_abstraction: bool = False):
@@ -355,6 +356,16 @@ class Contour:
     def reset_angle(self):
         self.theta = 0.0
 
+    def find_biggest_dist(self):
+        ''' 
+            Naive implementation to find the biggest distance betwwen two points of the contour. O(N²)
+        '''
+        maxm= 0.0
+        n_points = np.shape(self.Lmatrix)[1]
+        for i in range(n_points):
+            for j in range(i+1, n_points):
+                maxm =  max(maxm, np.linalg.norm(self.Lmatrix[0:2, i] - self.Lmatrix[0:2, j]))
+        return maxm
 
     @classmethod
     def read_file(cls, file, density:float = 1.0):

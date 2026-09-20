@@ -8,29 +8,6 @@ from rigid_transformation import *
 import const
 
 
-class Stop_Criteria(Flag):
-    ITERATIONS = auto()
-    FUNC_TOLERANCE = auto()
-    STEP_TOLERANCE = auto()
-
-
-
-
-
-
-#F1 = E + W
-#F2 = Tau
-
-def F1(ctr: Contour, liquid: Liquid, weight: float) ->float:
-    return weight + int_bouyant_optm(ctr, liquid)
-
-def F2(ctr: Contour, liquid: Liquid, cm: np.ndarray | None = None)  -> float:
-    if cm is None:
-        cm = int_cm_optm(ctr)
-    return int_torque_optm(ctr, liquid, cm)
-
-
-
 def calc_jacobian(ctr: Contour, liquid: Liquid, dtheta: float, db2: float, weight: float, cm: np.ndarray | None = None) -> np.array:
     if cm is None:
         cm = int_cm_contour(ctr)
@@ -105,6 +82,7 @@ def Newton_FDM(
             print("Iteration =", i)
             print("theta =", x_now[0], "; b2 =", x_now[1])
             print("F values:", F_now)
+            print("norm delta:", np.linalg.norm(delta))
             print("==================================================")
 
 
