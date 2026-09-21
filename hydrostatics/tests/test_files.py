@@ -13,10 +13,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-obj_name = "lmacc"
+obj_name = "cat"
+file_type = "point list" #can be "point list" or "components" 
 density = 0.5
-''' can be PVI, equilibrium or contour levels '''
-what_to_do = "contour levels"
+what_to_do = "PVI" #can be PVI, equilibrium or contour levels
 show_plot = True
 water = Liquid()
 
@@ -25,7 +25,10 @@ obj: Contour
 if obj_name == "manufactured_sol":
     obj = Contour.read_point_list("../objects/manufactured_sol.txt", density, False)
 else:
-    obj = Contour.read_file(f"../objects/{obj_name}.txt", density)
+    if file_type == "point list":
+        obj = Contour.read_point_list(f"../objects/{obj_name}.txt", density)
+    else:
+        obj = Contour.read_file(f"../objects/{obj_name}.txt", density)
 obj.discretize_n_lines(1000)
 
 volume = int_volume_optm(obj)
@@ -52,12 +55,12 @@ move_cm_to_origin(obj, reset_pos=True)
 
 
 if what_to_do == "PVI":
-    gamma = 0.1
+    gamma = 0.5
     u0 = np.array([
         6.0, #b2
         0.0, #y-speed
         0.0, #theta
-        5.0 #angular speed
+        4.0 #angular speed
     ])
 
     t0 = 0.0
@@ -87,7 +90,9 @@ if what_to_do == "PVI":
 
     ax1.legend()
     ax2.legend()
-    make_gif(obj, water, result_RK4, save=f"../gifs/{obj_name}_animation.gif")
+    fig_plot.savefig(f"../imgs/{obj_name}_PVI_plots.pdf")
+
+    make_gif(obj, water, result_RK4, save=f"../gifs/{obj_name}_anim.gif")
 
 
 if what_to_do == "equilibrium":
