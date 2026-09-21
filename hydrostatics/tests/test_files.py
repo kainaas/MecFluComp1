@@ -13,10 +13,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-obj_name = "cat"
+obj_name = "cow"
 file_type = "point list" #can be "point list" or "components" 
 density = 0.5
-what_to_do = "PVI" #can be PVI, equilibrium or contour levels
+what_to_do = "contour levels" #can be PVI, equilibrium or contour levels
 show_plot = True
 water = Liquid()
 
