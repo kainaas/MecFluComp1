@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 obj_name = "cow"
 file_type = "point list" #can be "point list" or "components" 
 density = 0.5
-what_to_do = "contour levels" #can be PVI, equilibrium or contour levels
+what_to_do = "PVI" #can be PVI, equilibrium or contour levels
 show_plot = True
 water = Liquid()
 
@@ -55,12 +55,12 @@ move_cm_to_origin(obj, reset_pos=True)
 
 
 if what_to_do == "PVI":
-    gamma = 0.5
+    gamma = 1.0
     u0 = np.array([
         6.0, #b2
         0.0, #y-speed
         0.0, #theta
-        4.0 #angular speed
+        3.0 #angular speed
     ])
 
     t0 = 0.0
@@ -96,7 +96,7 @@ if what_to_do == "PVI":
 
 
 if what_to_do == "equilibrium":
-    theta0 = - np.pi / 2
+    theta0 = np.pi
     b0 = 0.0
     db2 = 1e-4
     dtheta = 1e-4

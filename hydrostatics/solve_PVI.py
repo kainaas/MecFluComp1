@@ -78,11 +78,15 @@ def f_aux(
         Function f such that u' = f in the dynamics of a floating object
     '''
     rigid_transformation(ctr, u[2], u[0])
+    E = int_bouyant_optm(ctr, liquid)
+    F1_val = weight + E
+    Vf = E/ (const.g * liquid.density)
+    p = Vf/ volume
     return np.array([
         u[1],
-        (1/mass)*(F1(ctr, liquid, weight) - gamma*volume*u[1]),
+        (1/mass)*(F1_val - gamma* p * volume*u[1]),
         u[3],
-        (1/moment_inertia) * F2(ctr, liquid) -  gamma*u[3]
+        (1/moment_inertia) * F2(ctr, liquid) -  gamma*p*u[3]
     ])
 
 
