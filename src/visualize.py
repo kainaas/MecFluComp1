@@ -216,10 +216,10 @@ def beautiful_plot(
 
     
 
-def make_gif(ctr: Contour, liquid: Liquid, result: Result, interval: int = 33, show: bool = False, save:str | None = None):
+def make_gif(ctr: Contour, liquid: Liquid, result: Result, interval: int = 33, show: bool = False, save:str | None = None, speed_up: int = 1):
     '''
         Given a PVI solution, makes a gif of this solution. interval is the period of time in ms between each frame (33 is arround 30 fps).
-        Not recommended going aboe 30 fps
+        Not recommended going above 30 fps
     '''
     fig, ax = plt.subplots()
     fig.set_size_inches((10,10))
@@ -267,7 +267,7 @@ def make_gif(ctr: Contour, liquid: Liquid, result: Result, interval: int = 33, s
 
 
     def update(frame):
-        time = int((interval/(result.h*1000))*frame)
+        time = int((interval/(result.h*1000))*frame*speed_up)
         if time >= result.qnt_passos:
             time = result.qnt_passos - 1
         # Estado da solução neste instante
@@ -307,7 +307,7 @@ def make_gif(ctr: Contour, liquid: Liquid, result: Result, interval: int = 33, s
     anim = FuncAnimation(
         fig,
         update,
-        frames=int((1/(interval/1000))*(np.shape(result.t)[0] * result.h)),
+        frames=int((1/(interval/1000))*(np.shape(result.t)[0] * result.h)/speed_up),
         init_func=init,
         interval=interval,
         blit=True

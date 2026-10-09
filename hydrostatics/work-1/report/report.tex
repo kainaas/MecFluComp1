@@ -1,0 +1,150 @@
+\documentclass[
+	12pt,				% tamanho da fonte
+	oneside,			% para impressão apenas no recto. Oposto a twoside
+	a4paper,			% tamanho do papel. 
+	]{article}
+
+\usepackage[english, brazilian]{babel}		% Language-specific settings
+\usepackage{indentfirst}		% Indenta o primeiro parágrafo de cada seção.
+\usepackage{nomencl} 			% Lista de simbolos
+\usepackage{color}				% Controle das cores
+\usepackage{graphicx}			% Inclusão de gráficos
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{microtype} 			% para melhorias de justificação
+\usepackage[
+	top=3cm,
+	bottom=2cm,
+	left=3cm,
+	right=2cm
+]{geometry}
+\usepackage{setspace}
+\usepackage{csquotes}
+\usepackage{float}
+\usepackage{caption}
+
+\author{Kainã Alves Tureso - 15466391}
+\date{\today}
+\title{Estudo de flutuação de objetos 2D}
+
+\begin{document}
+    \maketitle    
+    \tableofcontents
+    \break
+
+
+    \section{Introdução}
+    O estudo da flutuação de corpos é amplamente usado em diversas áreas da engenharia. É comum precisarmos descobrir como um navio boia, qual deve ser a sua distribuição de carga e como as ondas o afetarão. A simulação dessa dinâmica beneficia, além de navios, o planejamento de pontes, plataformas de petróleo e estruturas flutuantes em geral.
+    
+    Simular a dinâmica completa da flutuação de um objeto, além de caro computacionalmente, exige uma matemática complexa de solução numérica de Equações Diferenciais Parciais (EDP). Dessa forma, fazemos simplificações tais que os resultados mantenham certa semelhança com a realidade ou recortem um momento da realidade, apesar de não estarmos resolvendo o problema completo.
+    
+    No estudo presente, avaliamos a flutuação de três objetos 2D: uma miniatura do Titanic, um triângulo retângulo e uma miniatura de iceberg. Para isso, são calculadas posições de equilíbrio, além de simulações da dinâmica aproximada da flutuação desses corpos.
+
+    
+    
+    \section{Metodologia}
+    
+    \subsection{Simplificações}
+    O estudo da flutuação foi feito sob a restrição de algumas simplificações:
+    \begin{itemize}
+        \item O corpo está em duas dimensões;
+        \item Os objetos são corpos rígidos (não sofrem deformações);
+        \item O fluido está em equilíbrio hidrostático;
+        \item A superfície livre não sofre deformação
+    \end{itemize}
+
+    \subsection{Grandezas e forças}
+    Com as simplificações acima, podemos definir quais são as forças que atuam sobre o corpo. Considerando que o objeto está sob o efeito de um campo gravitacional, sabemos que ele estará sujeito a uma força peso $W$. Como estará parcialmente ou completamente submerso em algum líquido, ele sofrerá uma força de empuxo $E$ e um torque $\tau$, relacionados com a aplicação da pressão hidrostática na superfície do corpo.
+
+    A força peso de um corpo $\Omega$ depende apenas das características geométricas e  físicas do objeto, sendo dada por $W(\Omega) = - V(\Omega) \rho g$ quando a densidade do objeto é constante para todos os pontos de $\Omega$. Aqui, $V(\Omega)$ é o volume do objeto, $\rho$ é sua densidade e $g$ é aceleração gravitacional.
+
+    Considere agora $y_s$ a altura da superfície livre do líquido e $\rho_L$ a densidade do líquido. Definimos a pressão hidrostática no ponto $\vec{x} = (x,y)$ por:
+    \[
+        p(\vec{x}) = p(x,y) = \begin{cases}
+            0, \text{ se } y \ge y_s \\
+            \rho_L g (y_s - y), \text{ se } y \le y_s
+        \end{cases}
+    \]
+     
+    Se usarmos a posição do corpo parametrizada por um ângulo de rotação $\theta$ e por uma altura $b_2$ a partir de uma posição de referência. O empuxo é dado por:
+    \[
+        E(\theta, b_2, \Omega) = \oint_{\partial \Omega (\theta, b_2)} -p(\vec{x})(\check{n} \cdot \check{e_2}) ds
+    \]
+    Onde $\check{e_2}$ é o vetor unitário da base canônica na direção do eixo $y$, $\check{n} = (n_1, n_2)$ é a normal unitária apontando para fora do objeto. Note que para os pontos de $\partial \Omega$ acima da superfície livre, a pressão é nula, logo, eles não contribuem para o valor final da integral. Com isso, definimos $S^-(\theta, b_2) = \{(x,y) \in \partial \Omega (\theta, b_2) : y \le y_s\}$ e $S^+(\theta, b_2) = \{(x,y) \in \partial \Omega (\theta, b_2) : y > y_s \}$. Temos que $S^- \cap S^+ = \emptyset$ e $S^- \cup S^+ = \partial \Omega$. O ponto interessante é que
+    \begin{equation}
+        E(\theta, b_2, \Omega) = \int_{S^- (\theta, b_2)} -p(\vec{x})(\check{n} \cdot \check{e_2}) ds
+        \label{eq:empuxo}
+    \end{equation}
+    
+
+    Por fim, para o torque, notemos que apenas a terceira componente terá valor não nulo, pois nossos pontos estão no $\mathbb{R}^2$, logo, calculamos o torque por:
+    \[
+        \vec{\tau}(\theta, b_2, \Omega) = \oint_{\partial \Omega (\theta, b_2)} (\vec{x} - \vec{c}) \times (-p(\vec{x}) \check{n}) ds \implies 
+    \]
+    \begin{equation}
+        \implies \tau(\theta, b_2, \Omega) = \vec{\tau}(\theta, b_2, \Omega) \cdot \check{e}_3 = \rho_L g \int_{S^-} y[(x - c_1)n_2 - (y-c_2)n_1] ds
+    \label{eq:torque}
+    \end{equation}
+    Em que $\vec{c} = (c_1, c_2)$ é a posição do centro de massa do corpo.
+
+
+    Dessa forma, escrevemos o balanço de forças:
+    \begin{equation}
+        \label{eq:forças}
+        \begin{cases}
+            F_x = 0 \\
+            F_y = E + W \\
+            F_r = \tau
+        \end{cases}
+    \end{equation}
+
+    Em que $F_x$ e $F_y$ são as resultantes das forças no eixos $x$ e $y$ respectivamente e $F_r$ é a resultante da força de rotação. Definiremos $F_1(\theta, b_2) = F_y$ e $F_2(\theta, b_2) = F_r$.
+
+    \subsubsection{Volume e centro de massa}
+    O empuxo e o torque foram dados em função do volume e do centro de massa de um objeto genérico, porém ainda não foi apresentado uma forma de calculá-los. Definimos assim o volume:
+    \begin{equation}
+        V(\Omega) = \int_\Omega dV = \frac{1}{2} \int_{\partial \Omega} \vec{x} \check{n} ds
+        \label{eq:volume}
+    \end{equation}
+    A segunda igualdade se deve ao fato de que $1 = \frac{1}{2} \nabla \cdot \vec{x}$ e uma aplicação do teorema da divergência. Se a densidade do objeto é constante, segue diretamente que a massa é dada por $m(\Omega) = \rho V$
+
+    Já o centro de massa, no caso de densidade constante, é dado por:
+    \begin{equation}
+        \vec{c} = \frac{1}{V} \int_\Omega \vec{x} dV = \frac{1}{3V} \oint_{\partial \Omega} (\vec{x} \cdot \check{n})\vec{x} ds
+        \label{eq:cm}
+    \end{equation}
+    A demonstração da segunda igualdade é omitida, pois foge do escopo deste trabalho.
+
+    \subsection{Métodos numéricos}
+    A partir do desenvolvimento teórico da seção anterior, foi possível encontrar as expressões \ref{eq:empuxo}, \ref{eq:torque}, \ref{eq:forças}, \ref{eq:volume} e \ref{eq:cm}, todas em função de uma integral no contorno do objeto. Para corpos com fronteira descrita por curvas arbitrárias, calcular essas integrais demandaria um trabalho extensivo. Dessa forma, podemos limitar os objetos para àqueles descritos por apenas segmentos de retas.
+
+    Seja $\Omega$ como acima e $\{ l_i \}^n_{i=1}$ o conjunto de segmento de retas tal que $\partial \Omega = \bigcup_{i=1}^n l_i$. Seja $f$ uma função que iremos integrar no contorno. Logo:
+    \begin{equation}
+        \int_{\partial \Omega} f(\vec{x}) ds = \sum_{i=1}^{n} \int_{l_i} f(\vec{x}) ds
+    \end{equation}
+    Reduzimos o problema a calcular integrais em retas. Para fazer esse procedimento numericamente, parametrizamos cada reta no intervalo $[-1,1]$ e aplicamos a quadratura de Gauss-Legendre, que integra exatamente polinômios de grau até no máximo $2m-1$, em que $m$ é o número de pontos usados na quadratura. Note que, as funções que iremos integrar são polinômios de grau no máximo 2, logo basta usar 2 ou 3 pontos na quadratura. 
+
+    \subsubsection{Parametrização das retas}
+
+    \subsubsection{Aplicação da quadratura}
+
+    
+    \subsection{Implementação}
+
+    \subsection{Encontrando pontos de equilíbrio}
+
+    \subsection{Dinâmica}
+
+
+    \section{Resultados}
+    \subsection{Teste com objeto manufaturado}
+
+    \subsection{Curvas de força}
+
+    \subsection{Pontos de equilíbrio encontrados}
+
+    \subsection{Análise dinâmica}
+
+    \section{Conclusão}
+\end{document}

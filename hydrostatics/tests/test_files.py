@@ -1,5 +1,5 @@
 import sys
-sys.path.append("./..")
+sys.path.append("./../../src")
 
 from objects import *
 from quadrature import *
@@ -12,15 +12,43 @@ import const
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-obj_name = "cow"
+#================================
+#Parameters definition
+#================================
+obj_name = "titanic"
 file_type = "point list" #can be "point list" or "components" 
-density = 0.5
+density = 400.0
 what_to_do = "PVI" #can be PVI, equilibrium or contour levels
 show_plot = True
-water = Liquid()
+water = Liquid(1000.0)
+
+#PVI parameters
+gamma1 = 404.0
+gamma2 = 1.0
+u0 = np.array([
+    0.0, #b2
+    0.0, #y-speed
+    0.0, #theta
+    0.0 #angular speed
+])
+
+t0 = 0.0
+t_final = 40.0
+h = 0.03
+
+speed_up = 4
+
+#Newton parameters
+theta0 = np.pi
+b0 = 0.0
+db2 = 1e-4
+dtheta = 1e-4
+tol = 1e-11
 
 
+#================================
+#Reading object
+#================================
 obj: Contour
 if obj_name == "manufactured_sol":
     obj = Contour.read_point_list("../objects/manufactured_sol.txt", density, False)
@@ -31,11 +59,24 @@ else:
         obj = Contour.read_file(f"../objects/{obj_name}.txt", density)
 obj.discretize_n_lines(1000)
 
+
+
+
+#================================
+#Calculating values
+#================================
 volume = int_volume_optm(obj)
 cm = int_cm_optm(obj)
+mass = volume * obj.density
+weight = calc_weight_optm(obj)
+I = int_MI_optm(obj)
+
 
 print("volume: ", volume)
 print("mass center: ", cm)
+print("Weight:", weight)
+print("Mass:", mass)
+print("Moment of inertia:", I)
 
 
 if obj_name == "manufactured_sol":
@@ -49,59 +90,36 @@ if obj_name == "manufactured_sol":
     print("Bouyant force (partially submerged): ", BF2)
 
 
-
 move_cm_to_origin(obj, reset_pos=True)
 
 
 
+#================================
+#PVI
+#================================
 if what_to_do == "PVI":
-    gamma = 1.0
-    u0 = np.array([
-        6.0, #b2
-        0.0, #y-speed
-        0.0, #theta
-        3.0 #angular speed
-    ])
+    f = lambda u, t: f_aux_float(u, t, obj, water, mass, weight, volume, I, gamma1, gamma2)
 
-    t0 = 0.0
-    t_final = 20.0
-    h = 0.01
-    
-    volume = int_volume_optm(obj)
-    mass = volume * obj.density
-    weight = calc_weight_optm(obj)
-    I = int_MI_optm(obj)
-
-    f = lambda u, t: f_aux(u, t, obj, water, mass, weight, volume, I, gamma)
-
-    result_e = euler_explicito(t0, t_final, h, u0, f)
     result_RK4 = RK4(t0, t_final, h, u0, f)
-
     fig_plot = plt.figure()
-    ax1 = fig_plot.add_subplot(121)
-    ax2 = fig_plot.add_subplot(122)
+    ax2 = fig_plot.add_subplot(111)
 
-    ax1.plot(result_e.t, result_e.u[0], label=r"$b_2$")
-    ax1.plot(result_e.t, result_e.u[2], label=r"$\theta$")
-    ax1.set_title("Explicit Euler")
     ax2.plot(result_RK4.t, result_RK4.u[0], label=r"$b_2$")
     ax2.plot(result_RK4.t, result_RK4.u[2], label=r"$\theta$")
     ax2.set_title("RK4")
 
-    ax1.legend()
     ax2.legend()
     fig_plot.savefig(f"../imgs/{obj_name}_PVI_plots.pdf")
 
-    make_gif(obj, water, result_RK4, save=f"../gifs/{obj_name}_anim.gif")
+    make_gif(obj, water, result_RK4, save=f"../gifs/{obj_name}_anim.gif",speed_up=speed_up)
 
 
+
+
+#================================
+#Newton
+#================================
 if what_to_do == "equilibrium":
-    theta0 = np.pi
-    b0 = 0.0
-    db2 = 1e-4
-    dtheta = 1e-4
-    tol = 1e-11
-
     solution = Newton_FDM(obj, water, b0, theta0, dtheta, db2, tol, verbose=True)
 
     weight = calc_weight_optm(obj)
@@ -143,6 +161,10 @@ if what_to_do == "equilibrium":
     obj.translate(cm[0], 0.0)
     obj.plot_discretized(ax)
 
+
+#================================
+#Plots of level
+#================================
 if what_to_do == "contour levels":
     beautiful_plot(obj, water, save=f"../imgs/{obj_name}_levels.pdf")
 

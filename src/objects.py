@@ -536,8 +536,8 @@ class Contour:
         with open(file, 'r') as f:
             lines = f.readlines()
             for i in range(len(lines)-1):
-                l1 = lines[i].split()
-                l2 = lines[i+1].split()
+                l1 = lines[i].replace("\ufeff", "").split()
+                l2 = lines[i+1].replace("\ufeff", "").split()
                 p1 = point(float(l1[0]), float(l1[1]))
                 p2 = point(float(l2[0]), float(l2[1]))
                 ctr.add_component(Line(p1, p2, counter_clockwise))

@@ -104,7 +104,7 @@ def Newton_FDM(
                 print("F norm: ", np.linalg.norm(F_now))
                 print("F values: ", F_now)
                 print("==================================================")
-            return x_now
+            return x_now, i
 
         F_last = F_now
         x_last = x_now

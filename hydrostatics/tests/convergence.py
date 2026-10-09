@@ -1,5 +1,5 @@
 import sys
-sys.path.append("./..")
+sys.path.append("./../../src")
 
 from objects import *
 from quadrature import *
@@ -24,6 +24,7 @@ weight_true = - volume_true * const.g
 BF_true = - weight_true/2
 torque_true = 0.0
 I_true = np.pi / 2
+A_under_true = np.pi
 
 
 
@@ -35,6 +36,7 @@ weight_diff = []
 torque_diff = []
 BF_diff = []
 I_diff = []
+A_under_diff = []
 
 table = []
 table_factors = []
@@ -49,8 +51,9 @@ for i, n in enumerate(num_lines):
     move_cm_to_origin(obj, point(1.0,1.0), True)
     torque_diff.append(np.abs(torque_true - int_torque_optm(obj, water)))
     BF_diff.append(np.abs(BF_true - int_bouyant_optm(obj, water)))
+    A_under_diff.append(np.abs(A_under_true - int_area_under(obj, water)))
 
-    table.append([n, volume_diff[i], cm_diff[i], weight_diff[i], torque_diff[i], BF_diff[i], I_diff[i]])
+    table.append([n, volume_diff[i], cm_diff[i], weight_diff[i], torque_diff[i], BF_diff[i], I_diff[i], A_under_diff[i]])
 
     if i != 0:
         volume_factor = volume_diff[i] / volume_diff[i-1]
@@ -59,11 +62,12 @@ for i, n in enumerate(num_lines):
         torque_factor = torque_diff[i] / torque_diff[i-1]
         BF_factor = BF_diff[i] / BF_diff[i-1]
         I_factor = I_diff[i] / I_diff[i-1]
+        A_under_factor = A_under_diff[i] / A_under_diff[i-1]
 
-        table_factors.append([n, volume_factor, cm_factor, weight_factor, torque_factor, BF_factor, I_factor])
+        table_factors.append([n, volume_factor, cm_factor, weight_factor, torque_factor, BF_factor, I_factor, A_under_factor])
     else:
         table_factors.append([n, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 
-print(tabulate(table, headers=["num lines","volume error", "cm error", "weight error", "torque error", "BF error", "MI error"], tablefmt="grid", numalign="left", stralign="left"))
-print(tabulate(table_factors, headers=["num lines","volume factor", "cm factor", "weight factor", "torque factor", "BF factor", "MI factor"], tablefmt="grid", numalign="left", stralign="left"))
+print(tabulate(table, headers=["num lines","volume error", "cm error", "weight error", "torque error", "BF error", "MI error", "Area under error"], tablefmt="grid", numalign="left", stralign="left"))
+print(tabulate(table_factors, headers=["num lines","volume factor", "cm factor", "weight factor", "torque factor", "BF factor", "MI factor", "Area under factor"], tablefmt="grid", numalign="left", stralign="left"))

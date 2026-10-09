@@ -1,5 +1,7 @@
 Livros/
 __pycache__/
+
+*.gif
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof

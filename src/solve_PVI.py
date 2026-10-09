@@ -63,7 +63,7 @@ def RK4(t0, t_final, h, u0: np.array, f):
     return Result(qnt_passos, h, u, t)
 
 
-def f_aux(
+def f_aux_float(
     u: np.array, 
     t:float, 
     ctr: Contour, 
@@ -72,21 +72,18 @@ def f_aux(
     weight: float, 
     volume:float, 
     moment_inertia: float,
-    gamma:float
+    gamma1:float,
+    gamma2:float
 ):
     '''
         Function f such that u' = f in the dynamics of a floating object
     '''
     rigid_transformation(ctr, u[2], u[0])
-    E = int_bouyant_optm(ctr, liquid)
-    F1_val = weight + E
-    Vf = E/ (const.g * liquid.density)
-    p = Vf/ volume
     return np.array([
         u[1],
-        (1/mass)*(F1_val - gamma* p * volume*u[1]),
+        (1/mass)*(F1(ctr, liquid, weight) - gamma1 * volume*u[1]),
         u[3],
-        (1/moment_inertia) * F2(ctr, liquid) -  gamma*p*u[3]
+        (1/moment_inertia) * F2(ctr, liquid) -  gamma2 * u[3]
     ])
 
 
@@ -104,7 +101,7 @@ if __name__ == "__main__":
     weight = calc_weight_optm(obj)
     I = int_MI_optm(obj)
 
-    f = lambda u, t: f_aux(u, t, obj, water, mass, weight, volume, I, gamma)
+    #f = lambda u, t: f_aux(u, t, obj, water, mass, weight, volume, I, gamma)
         
     u0 = np.array([
         6.0, #b2

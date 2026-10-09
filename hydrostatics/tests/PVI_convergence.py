@@ -1,5 +1,5 @@
 import sys
-sys.path.append("./..")
+sys.path.append("./../../src")
 
 from objects import *
 from quadrature import *
@@ -30,7 +30,7 @@ def calc_error(u:Result, u_fine:Result):
 
 
 
-obj_name = "cow"
+obj_name = "titanic"
 file_type = "point list" #can be "point list" or "components" 
 density = 0.5
 show_plot = True
@@ -60,7 +60,8 @@ ax2.set_title("RK4")
 fig_conv = plt.figure(figsize=(2000, 1000, "px"))
 ax_conv = fig_conv.add_subplot(111)
 
-gamma = 0.7
+gamma1 = 0.7
+gamma2 = 0.7
 u0 = np.array([
     6.0, #b2
     0.0, #y-speed
@@ -76,7 +77,7 @@ mass = volume * obj.density
 weight = calc_weight_optm(obj)
 I = int_MI_optm(obj)
 
-f = lambda u, t: f_aux(u, t, obj, water, mass, weight, volume, I, gamma)
+f = lambda u, t: f_aux_float(u, t, obj, water, mass, weight, volume, I, gamma1, gamma2)
 
 
 errorsEE_theta = []

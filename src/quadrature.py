@@ -190,6 +190,14 @@ def segment_optm(ctr: Contour, liquid: Liquid):
     return lines, normals
 
 
+def int_area_under(ctr: Contour, liquid: Liquid, n_points_quad: int = 3) -> float:
+    '''
+        Calculates the area under the water.
+    '''
+    lines, normals = segment_optm(ctr, liquid)
+    g = lambda xi: np.linalg.norm((lines[0:2, :] - lines[3:5, :])/2,axis=0)
+    return Gauss_Legendre.integrate_vector(g, n_points_quad)
+
 
 #=================================
 # buoyant force integrals
