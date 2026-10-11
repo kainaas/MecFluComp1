@@ -9,7 +9,7 @@ import numpy as np
 #================================
 obj_name = "iceberg"
 density = 917.0
-what_to_do = "PVI" #can be PVI, equilibrium, contour levels or convergence
+what_to_do = "equilibrium" #can be PVI, equilibrium, contour levels or convergence
 show_plot = False
 water = Liquid(1000.0)
 

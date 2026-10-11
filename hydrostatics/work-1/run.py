@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 #================================
 #Choosing object
 #================================
-
+#Import just the one you want to run
 #from titanic import *
 from triangulo_retangulo import *
 #from iceberg import *
@@ -114,7 +114,7 @@ if what_to_do == "equilibrium":
         print("Solution: theta = ", solution[0], "; b2 = ", solution[1])
 
 
-        fig = plt.figure(figsize=(20,10), dpi=100)
+        fig = plt.figure(figsize=(1000, 1000, "px"))
 
         L = obj.find_biggest_dist()
 

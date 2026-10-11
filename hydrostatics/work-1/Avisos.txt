@@ -1,0 +1,4 @@
+O código está na íntegra no github (https://github.com/kainaas/MecFluComp1). 
+A pasta src contém o código base. 
+O diretório hydrostatics->work-1 contém o código aplicado ao trabalho, o relatório, imagens e gifs gerados. 
+Do diretório hydrostatics->test também foram utilizados os arquivos test_files.py e convergence.py.

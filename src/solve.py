@@ -8,6 +8,27 @@ from rigid_transformation import *
 import const
 
 
+def ordem_convergencia_media(pontos, raiz):
+    pontos = np.asarray(pontos, dtype=float)
+    erros = np.abs(pontos - raiz)
+
+    # p_n é calculado a partir de três erros consecutivos
+    e0 = erros[:-2]
+    e1 = erros[1:-1]
+    e2 = erros[2:]
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ordens = np.log(e2 / e1) / np.log(e1 / e0)
+
+    # Remove valores indefinidos ou infinitos
+    ordens = ordens[np.isfinite(ordens)]
+
+    if len(ordens) == 0:
+        return np.nan
+
+    return np.mean(ordens)
+
+
 def calc_jacobian(ctr: Contour, liquid: Liquid, dtheta: float, db2: float, weight: float, cm: np.ndarray | None = None) -> np.array:
     '''
         Jacobian of the function F = (F1, F2)
@@ -65,6 +86,9 @@ def Newton_FDM(
     cm_last = int_cm_optm(ctr)
     F_last = point(F1(ctr, liquid, weight), F2(ctr, liquid, cm_last))
 
+    lx = []
+    lx.append(x_last)
+
     if verbose:
         print("\n==================================================")
         print("Initiating Newton iteration with finite differences")
@@ -77,7 +101,8 @@ def Newton_FDM(
 
         delta = np.linalg.solve(J, -F_last)
         x_now = x_last + delta
-        
+        lx.append(x_now)
+
         rigid_transformation(ctr, x_now[0], x_now[1], cm_last)
         cm_now = int_cm_optm(ctr)
 
@@ -92,6 +117,7 @@ def Newton_FDM(
 
 
         if (np.linalg.norm(delta) < tol and np.linalg.norm(F_now) < tol) or i == max_it - 1:
+            order = ordem_convergencia_media(lx[:-1], x_now)
             if verbose:
                 print("\n==================================================")
                 if i == max_it - 1:
@@ -103,7 +129,9 @@ def Newton_FDM(
                 print("delta norm:", np.linalg.norm(delta))
                 print("F norm: ", np.linalg.norm(F_now))
                 print("F values: ", F_now)
+                print("Mean order of convergence:", order)
                 print("==================================================")
+                
             return x_now, i
 
         F_last = F_now

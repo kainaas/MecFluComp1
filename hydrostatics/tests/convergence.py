@@ -55,19 +55,23 @@ for i, n in enumerate(num_lines):
 
     table.append([n, volume_diff[i], cm_diff[i], weight_diff[i], torque_diff[i], BF_diff[i], I_diff[i], A_under_diff[i]])
 
-    if i != 0:
-        volume_factor = volume_diff[i] / volume_diff[i-1]
-        cm_factor = cm_diff[i] / cm_diff[i-1]
-        weight_factor = weight_diff[i] / weight_diff[i-1]
-        torque_factor = torque_diff[i] / torque_diff[i-1]
-        BF_factor = BF_diff[i] / BF_diff[i-1]
-        I_factor = I_diff[i] / I_diff[i-1]
-        A_under_factor = A_under_diff[i] / A_under_diff[i-1]
+    # if i != 0:
+    #     volume_factor = volume_diff[i] / volume_diff[i-1]
+    #     cm_factor = cm_diff[i] / cm_diff[i-1]
+    #     weight_factor = weight_diff[i] / weight_diff[i-1]
+    #     torque_factor = torque_diff[i] / torque_diff[i-1]
+    #     BF_factor = BF_diff[i] / BF_diff[i-1]
+    #     I_factor = I_diff[i] / I_diff[i-1]
+    #     A_under_factor = A_under_diff[i] / A_under_diff[i-1]
 
-        table_factors.append([n, volume_factor, cm_factor, weight_factor, torque_factor, BF_factor, I_factor, A_under_factor])
-    else:
-        table_factors.append([n, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
+    #     table_factors.append([n, volume_factor, cm_factor, weight_factor, torque_factor, BF_factor, I_factor, A_under_factor])
+    # else:
+    #     table_factors.append([n, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+table = np.array(table)
 
 print(tabulate(table, headers=["num lines","volume error", "cm error", "weight error", "torque error", "BF error", "MI error", "Area under error"], tablefmt="grid", numalign="left", stralign="left"))
-print(tabulate(table_factors, headers=["num lines","volume factor", "cm factor", "weight factor", "torque factor", "BF factor", "MI factor", "Area under factor"], tablefmt="grid", numalign="left", stralign="left"))
+
+print(tabulate(table[:, 0:4], headers=["Número de segmentos","Colume", "Centro de massa", "Peso"], tablefmt="latex", numalign="right", stralign="left"))
+
+print(tabulate(table[:, [0,4,5,6]], headers=["Número de segmentos", "Torque", "Empuxo", "Momento de inércia"], tablefmt="latex", numalign="right", stralign="left"))
+# print(tabulate(table_factors, headers=["num lines","volume factor", "cm factor", "weight factor", "torque factor", "BF factor", "MI factor", "Area under factor"], tablefmt="grid", numalign="left", stralign="left"), tablefmt="latex")

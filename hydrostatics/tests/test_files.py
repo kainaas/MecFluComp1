@@ -15,12 +15,12 @@ import matplotlib.pyplot as plt
 #================================
 #Parameters definition
 #================================
-obj_name = "titanic"
+obj_name = "manufactured_sol"
 file_type = "point list" #can be "point list" or "components" 
-density = 400.0
+density = 0.5
 what_to_do = "PVI" #can be PVI, equilibrium or contour levels
 show_plot = True
-water = Liquid(1000.0)
+water = Liquid(1.0)
 
 #PVI parameters
 gamma1 = 404.0

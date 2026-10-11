@@ -9,7 +9,7 @@ import numpy as np
 #================================
 obj_name = "titanic"
 density = 400.0
-what_to_do = "convergence" #can be PVI, equilibrium, contour levels or convergence
+what_to_do = "equilibrium" #can be PVI, equilibrium, contour levels or convergence
 show_plot = True
 water = Liquid(1000.0)
 

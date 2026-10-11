@@ -159,11 +159,13 @@ def map_F(
     if t == 3 or t == 4:
         if t == 3:
             ax.set_title(r"$(F_1, F_2)$")
-        magnitude = np.sqrt(F1**2 + F2**2)
+        F2_max = np.max(F2)
+        F1_max = np.max(F1)
+        magnitude = np.sqrt(((F2_max/F1_max)*F1)**2 + F2**2)
 
         U = np.divide(
             F1,
-            magnitude,
+            magnitude /(F2_max/F1_max),
             out=np.zeros_like(F1),
             where=magnitude > 0
         )
