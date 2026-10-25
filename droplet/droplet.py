@@ -4,9 +4,11 @@ path.append("./../src")
 
 from solve_PVI import *
 import const
+from objects import Circle
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import itertools
 
 
@@ -26,10 +28,14 @@ class Droplet:
         self.a = a
         self.adimensional = adimensional
 
-    def plot(self, ax:plt.Axes, label: str|None = None):
+    def get_plot_vecs(self):
         x_plot = np.hstack([np.flip(-self.r), self.r])
         z_plot = np.hstack([np.flip(self.z), self.z])
         z_plot = z_plot - self.get_height()
+        return x_plot, z_plot
+
+    def plot(self, ax:plt.Axes, label: str|None = None):
+        x_plot, z_plot = self.get_plot_vecs()
         if label is None:
             ax.plot(x_plot, z_plot)
         else:
@@ -295,7 +301,7 @@ if __name__ == "__main__":
     B = density * const.g * a * a / gamma
 
 
-    plot_type = "droplet" #may be "Vxd", "VxA", "droplet", "droplets", "Vstar", "max_press"
+    plot_type = "various" #may be "Vxd", "VxA", "droplet", "droplets", "Vstar", "max_press", "no_g", "various", "anim"
     show_plot = True
 
 
@@ -342,8 +348,8 @@ if __name__ == "__main__":
 
 
     elif plot_type == "droplet":
-        V = 2.0 * 35.39486160126 / 3.0
-        A = shooting(V, 1.2, 1.4, B, a)
+        V = 7.824999999999999
+        A = shooting(V, 1.5, 2.0, B, a)
         print(A, V)
         droplets = find_droplets(A, B, a, np.pi * 5, 0.001)
 
@@ -435,8 +441,106 @@ if __name__ == "__main__":
             fontsize=14, ha='center')
 
 
-                
+    elif plot_type == "no_g":
+        g = 0.0
+        B = 0.0
+        A = 1.5
+        droplets = find_droplets(A, B, a, np.pi * 5, 0.001)
 
+
+        p0 = (gamma/a) * A
+        fig = plt.figure(figsize=(1000,1000, 'px'))
+        ax = fig.add_subplot(111)
+        for i, droplet in enumerate(droplets):
+            if i > 1: break
+            droplet.plot(ax, f"Intersection {i+1}, V = {droplet.V:.2f}")
+            if i == 1:
+                height = droplet.get_height()
+                radius = 2.0 / A 
+                height -= radius
+                c = Circle(point(0.0, -height), radius)
+                c.plot(ax)
+
+            
+        ax.set_title(f"Droplets A = {A}")
+        ax.legend()
+        ax.set_aspect("equal")
+
+    elif plot_type == "various" or plot_type == "anim":
+        max_V = 31.0
+        min_V = 0.1
+        num_d = 19
+        lV = np.linspace(min_V, max_V, num_d)
+                
+        fig = plt.figure(figsize=(1000, 1000, 'px'))
+        ax = fig.add_subplot(111)
+        ax.set_aspect("equal")
+        droplets = []
+        for V in lV:
+            A: float
+            print("V=", V)
+            if V <= 2.17221828749:
+                A = shooting(V, 0.0, 2.0, B, a)
+            elif V > 20.0:
+                A = shooting(V, 1.2, 1.4, B, a)
+            elif V > 10.0:
+                A = shooting(V, 1.3, 1.6, B, a)
+            elif V > 5.0:
+                A = shooting(V, 1.5, 1.9, B, a)
+            elif V > 2.17221828749:
+                A = shooting(V, 1.2, 1.9, B, a)
+            
+            ld = find_droplets(A, B, a, np.pi * 5.0, 0.001)
+            if len(ld) >= 2:
+                ld = ld[:2]
+            d = sorted(ld, key=lambda d: abs(d.V - V))[0]
+            droplets.append(d)
+
+        droplets.append(find_droplets(1.19721119513, B, a, np.pi*5.0, 0.001)[1])
+
+        if plot_type == "various":
+            for d in droplets:
+                d.plot(ax, label=f"V={d.V:.3f}")
+            ax.legend()
+
+
+
+        if plot_type == "anim":
+            save = "imgs/b.gif"
+
+            duration = 2.0 #in seconds
+            interval = int(duration/len(droplets) * 1000) #in ms
+
+            ax.set_xlim(-2.0, 2.0)
+            ax.set_ylim(-5.5, 0.1)
+
+            line, = ax.plot([], [], lw=2)
+            line.set_color("black")
+
+
+            def init():
+                line.set_data([], [])
+                return (line,)
+
+
+            def update(frame):
+                x, y = droplets[frame].get_plot_vecs()
+                line.set_data(x, y)
+
+                return (line,)
+
+
+
+            anim = FuncAnimation(
+                fig,
+                update,
+                frames=len(droplets),
+                init_func=init,
+                interval=interval,
+                blit=True
+            )
+            if not (save is None):
+                anim.save(save)
 
     if show_plot:
         plt.show()
