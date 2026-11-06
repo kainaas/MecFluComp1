@@ -13,12 +13,24 @@ import itertools
 
 
 class Droplet:
+    '''
+        Parameters:
+        -----------
+        r: x coordinates of the droplet
+        z: z coordinates of the droplet
+        V: volume of the 3D droplet 
+        S: surface area of the droplet
+        a: is the adimensionalization factor. For pendant droplets is the radius of the nozzle. For sessile droplets is the capillary length
+        d_type: "pendant" or "sessile" droplet
+        adimensional: tells if the droplet is adimensionalized 
+        '''
     def __init__(self, 
         r:np.array, 
         z:np.array, 
         V:float, 
         S:float,
         a: float,
+        d_type: str = "pendant",
         adimensional:bool = True
     ):
         self.r = r
@@ -26,12 +38,20 @@ class Droplet:
         self.V = V
         self.S = S
         self.a = a
+        self.d_type = d_type
         self.adimensional = adimensional
+        if d_type not in ("pendant", "sessile"):
+            raise ValueError(
+                "d_type must be 'pendant' or 'sessile'."
+            )
 
     def get_plot_vecs(self):
         x_plot = np.hstack([np.flip(-self.r), self.r])
         z_plot = np.hstack([np.flip(self.z), self.z])
-        z_plot = z_plot - self.get_height()
+        if self.d_type == "pendant":
+            z_plot = z_plot - self.get_height()
+        else:
+            z_plot = self.get_height() - z_plot
         return x_plot, z_plot
 
     def plot(self, ax:plt.Axes, label: str|None = None):
@@ -63,7 +83,10 @@ class Droplet:
     
     def change_a(self, new_a:float):
         if new_a <= 0:
-            raise ValueError("The nozzle radius must be positive.")
+            if self.d_type == "pendant":
+                raise ValueError("The nozzle radius must be positive.")
+            else:
+                raise ValueError("The characteristic length must be positive.")
         if not self.adimensional:
             self.adimensionalize()
             self.a = new_a
@@ -86,11 +109,19 @@ u = r   =   u[0]
 '''
 
 '''
+pendant:
 f(u,s) = cos(theta)                                     =   cos(u[2])
          sin(theta)                                         sin(u[2])
          (p0 - density * g  * z) / gamma - sin(theta)/r     (p0 - density * g * u[1]) / gamma - sin(u[2])/u[0]
          pi * r * r * sin(theta)                            pi * u[0] * u[0] * sin(u[2])
          2 * pi * r                                         2 * pi * u[0]
+sessile:
+f(u,s) = cos(theta)                                     =   cos(u[2])
+         sin(theta)                                         sin(u[2])
+         (p0 + density * g  * z) / gamma - sin(theta)/r     (p0 - density * g * u[1]) / gamma - sin(u[2])/u[0]
+         pi * r * r * sin(theta)                            pi * u[0] * u[0] * sin(u[2])
+         2 * pi * r                                         2 * pi * u[0]
+
 '''
 
 def f_aux_droplet(
@@ -120,38 +151,60 @@ def f_aux_droplet_adimensionalized(
     u: np.array,    #Last vector
     s: float,       #
     A: float,
-    B: float
+    B: float,
+    d_type: str = "pendant"
 ) -> np.array:
-    return np.array([
-        np.cos(u[2]),
-        np.sin(u[2]),
-        A - B * u[1] - np.sin(u[2])/u[0],
-        np.pi * u[0] * u[0] * np.sin(u[2]),
-        2 * np.pi * u[0]
-    ])
+    if d_type == "pendant":
+        return np.array([
+            np.cos(u[2]),
+            np.sin(u[2]),
+            A - B * u[1] - np.sin(u[2])/u[0],
+            np.pi * u[0] * u[0] * np.sin(u[2]),
+            2 * np.pi * u[0]
+        ])
+    else:
+        return np.array([
+            np.cos(u[2]),
+            np.sin(u[2]),
+            A + B * u[1] - np.sin(u[2])/u[0],
+            np.pi * u[0] * u[0] * np.sin(u[2]),
+            2 * np.pi * u[0]
+        ])
 
 def initialize_droplet(
     A: float,
     B: float,
-    eps: float = 1.0e-7
+    eps: float = 1.0e-7,
+    d_type: str = "pendant"
 ) -> np.array:
-    return np.array([
-        eps - (A*A/24.0)* eps**3, #r
-        (A/4.0)*eps*eps, #z
-        (A/2.0)*eps - (A*B/16.0)* eps**3, #theta
-        (np.pi * A /8.0)*eps**4, #V
-        np.pi*eps*eps
-    ])
+    if d_type == "pendant":
+        return np.array([
+            eps - (A*A/24.0)* eps**3, #r
+            (A/4.0)*eps*eps, #z
+            (A/2.0)*eps - (A*B/16.0)* eps**3, #theta
+            (np.pi * A /8.0)*eps**4, #V
+            np.pi*eps*eps
+        ])
+    else:
+        return np.array([
+            eps - (A*A/24.0)* eps**3, #r
+            (A/4.0)*eps*eps, #z
+            (A/2.0)*eps + (A*B/16.0)* eps**3, #theta
+            (np.pi * A /8.0)*eps**4, #V
+            np.pi*eps*eps
+        ])
 
-
-
-def find_args_intersection(result: Result, a: float) -> list:
+def find_args_intersection(result: Result, stop_val: float, d_type: str = "pendant") -> list:
     '''
     Find the arguments of the result such that it has the same radius as a.
-    The returned argument i is such that u[0, i] <= a <= u[0,i+1]
+    The returned argument i is such that u[j, i] <= stop_val <= u[j,i+1], j= 0 or 2
     '''
-    tmp = np.vstack([result.u[0,:-1], result.u[0,1:]])
-    args = np.argwhere(((tmp[0,:] <= a) & (tmp[1,:] > a)) | ((tmp[0,:] >= a) & (tmp[1,:] < a)) | (tmp[0,:] == a) & (tmp[1,:] == a))
+    tmp: np.ndarray
+    if d_type == "pendant":
+        tmp = np.vstack([result.u[0,:-1], result.u[0,1:]])
+    else: #Sessile drop
+        tmp = np.vstack([result.u[2,:-1], result.u[2,1:]])
+    args = np.argwhere(((tmp[0,:] <= stop_val) & (tmp[1,:] > stop_val)) | ((tmp[0,:] >= stop_val) & (tmp[1,:] < stop_val)) | (tmp[0,:] == stop_val) & (tmp[1,:] == stop_val))
     return list(itertools.chain.from_iterable(args))
 
 
@@ -160,17 +213,22 @@ def find_droplets(
     B: float,
     a: float,
     max_s: float,
-    ds: float
+    ds: float,
+    stop_val: float = 1.0,
+    d_type: str = "pendant"
 ) -> list[Droplet]:
-    f = lambda u,s: f_aux_droplet_adimensionalized(u,s, A, B)
+    f = lambda u,s: f_aux_droplet_adimensionalized(u,s, A, B, d_type)
     eps = 1.0e-7
-    u0 = initialize_droplet(A, B, eps)
+    u0 = initialize_droplet(A, B, eps, d_type)
     result = RK4(eps, max_s, ds, u0, f)
-    args = find_args_intersection(result, 1.0)
+    args = find_args_intersection(result, stop_val, d_type)
     
     droplets = []
     if len(args) == 0:
         return droplets
+
+    if d_type == "sessile":
+        args = [args[0]]
     for arg in args:
         r = result.u[0,:arg]
         z = result.u[1,:arg]
@@ -180,16 +238,18 @@ def find_droplets(
             u_arg = result.u[:, arg]
             u_rarg = result.u[:, arg+1]
             if np.abs(u_arg[0] - u_rarg[0]) < const.EPSILON:
-                d = Droplet(r, z, V, S, a)
+                d = Droplet(r, z, V, S, a, d_type)
                 droplets.append(d)
             else:
-                xi = (1.0 - u_rarg[0]) / (u_arg[0] - u_rarg[0])
+                stop_idx = 0 if d_type == "pendant" else 2
+                xi = (stop_val - u_rarg[stop_idx]) / (u_arg[stop_idx] - u_rarg[stop_idx])
+                u_interpol = xi * u_arg + (1.0 - xi) * u_rarg
                 u_interpol = xi * u_arg + (1.0 - xi) * u_rarg
                 r = np.hstack([r, u_interpol[0]])
                 z = np.hstack([z, u_interpol[1]])
                 V = u_interpol[3]
                 S = u_interpol[4]
-                d = Droplet(r, z, V, S, a)
+                d = Droplet(r, z, V, S, a, d_type)
                 droplets.append(d)
         else: print("Run with bigger max_s. Intersection on the edge of the solution vector")
     return droplets
@@ -232,11 +292,13 @@ def shooting(
     A1: float,
     B: float,
     a: float,
+    stop_val:float = 1.0,
     tol: float = 1.0e-10,
     max_iter: int = 100,
+    d_type: str = "pendant"
 ) -> float:
     def volume(A: float) -> float:
-        droplets = find_droplets(A, B, a, np.pi * 5.0, 0.001)
+        droplets = find_droplets(A, B, a, np.pi * 5.0, 0.001, stop_val, d_type)
 
         if not droplets:
             raise RuntimeError(f"No droplet found for A={A}")
@@ -271,276 +333,9 @@ def shooting(
             return A_next
 
         A0, V0 = A1, V1
-        A1 = A_next
+        A1 = max(A_next, 1e-5)
         V1 = volume(A1)
 
     raise RuntimeError(
         f"Shooting method did not converge after {max_iter} iterations."
     )
-
-
-
-'''
-Max volume droplet:
-    A = 1.19721119513
-    V* = 35.39486160126
-
-Max pressure droplet:
-    A* = 2.04614459832
-    V = 2.17221828749
-'''
-
-
-if __name__ == "__main__":
-    gamma = 0.0728      #N/m
-    density = 1000.0    #kg/m³
-    a = 0.001           #m
-
-    ds = 0.001
-    max_s = 5 * np.pi
-    B = density * const.g * a * a / gamma
-
-
-    plot_type = "various" #may be "Vxd", "VxA", "droplet", "droplets", "Vstar", "max_press", "no_g", "various", "anim"
-    show_plot = True
-
-
-    if plot_type == "Vxd":
-        lA = np.linspace(0.0, 3.0, 500)
-        lV = []
-        ld = []
-        for A in lA:
-            droplets = find_droplets(A, B, a, 5*np.pi, 0.001)
-            for d in droplets:
-                lV.append(d.V)
-                ld.append(d.get_height())
-        
-
-        fig = plt.figure(figsize = (1000, 1000, "px"))
-        ax = fig.add_subplot(111)
-        ax.scatter(lV, ld)
-        ax.set_title(f"Volume x droplet height")
-        ax.set_xlabel("Volume")
-        ax.set_ylabel("d")
-        
-    elif plot_type == "VxA": 
-        fig = plt.figure(figsize = (1000, 1000, "px"))
-        ax = fig.add_subplot(111)
-        ax.set_aspect("equal")
-
-        lA = np.linspace(0.0, 3.0, 500)
-        lV = []
-        lA_plot = []
-        for A in lA:
-            droplets = find_droplets(A, B, a, 5*np.pi, 0.001)
-            for d in droplets:
-                lV.append(d.V)
-                lA_plot.append(A)
-        
-
-        fig = plt.figure(figsize = (1000, 1000, "px"))
-        ax = fig.add_subplot(111)
-        ax.scatter(lV, lA_plot)
-        ax.set_title(f"Volume x A")
-        ax.set_xlabel("Volume")
-        ax.set_ylabel("A")
-
-
-
-    elif plot_type == "droplet":
-        V = 7.824999999999999
-        A = shooting(V, 1.5, 2.0, B, a)
-        print(A, V)
-        droplets = find_droplets(A, B, a, np.pi * 5, 0.001)
-
-
-        p0 = (gamma/a) * A
-        fig = plt.figure(figsize=(1000,1000, 'px'))
-        ax = fig.add_subplot(111)
-        for i, droplet in enumerate(droplets):
-            if i > 1: break
-            droplet.plot(ax, f"Intersection {i+1}, V = {droplet.V:.2f}")
-            
-        ax.set_title(f"Droplets A = {A}")
-        ax.legend()
-        ax.set_aspect("equal")
-
-
-
-
-    elif plot_type == "Vstar":
-        
-        def V_droplet(A):
-            return max_V_droplet(A, B, a, np.pi * 5.0, 0.001)
-        
-        tol = 1.0e-11
-        
-        A_min = 1.19
-        A_max = 1.21
-        while A_max - A_min > tol:
-            print(A_min, A_max)
-            A_l = A_min + (A_max - A_min) / 3
-            A_r = A_max - (A_max - A_min) / 3
-
-            V_l = V_droplet(A_l)
-            V_r = V_droplet(A_r)
-
-            if V_l.V < V_r.V:
-                A_min = A_l
-            else:
-                A_max = A_r
-
-        A_max_val = (A_min + A_max) / 2.0
-        max_droplet= V_droplet(A_max_val)
-
-        p0 = (gamma/a) * A_max_val
-        fig = plt.figure(figsize=(1000,1000, 'px'))
-        ax = fig.add_subplot(111)
-        max_droplet.plot(ax)
-        ax.set_title("Max volume droplet")
-        ax.set_aspect("equal")
-        ax.text(
-            0.5, 0.5,
-            f"p_0 ={p0}\n A={A_max_val}\nV*={max_droplet.V}",
-            transform=fig.transFigure,
-            fontsize=14, ha='center')
-
-
-    elif plot_type == "max_press":
-
-        def V_droplet(A):
-            return min_V_droplet(A, B, a, np.pi * 5.0, 0.001)
-        tol = 1.0e-11
-        
-        A_min = 2.0
-        A_max = 2.2
-        while A_max - A_min > tol:
-            print(A_min, A_max)
-            A_m = (A_max + A_min) / 2
-
-            V_m = V_droplet(A_m)
-
-            if V_m.V > 5.0:
-                A_max = A_m
-            else:
-                A_min = A_m
-
-        A_max_val = A_min
-        max_droplet = V_droplet(A_max_val)
-
-        p0 = (gamma/a) * A_max_val
-        fig = plt.figure(figsize=(1000,1000, 'px'))
-        ax = fig.add_subplot(111)
-        max_droplet.plot(ax)
-        ax.set_title("Max pressure droplet")
-        ax.set_aspect("equal")
-        ax.text(
-            0.5, 0.5,
-            f"p_0 ={p0}\n A={A_max_val}\nV*={max_droplet.V}",
-            transform=fig.transFigure,
-            fontsize=14, ha='center')
-
-
-    elif plot_type == "no_g":
-        g = 0.0
-        B = 0.0
-        A = 1.5
-        droplets = find_droplets(A, B, a, np.pi * 5, 0.001)
-
-
-        p0 = (gamma/a) * A
-        fig = plt.figure(figsize=(1000,1000, 'px'))
-        ax = fig.add_subplot(111)
-        for i, droplet in enumerate(droplets):
-            if i > 1: break
-            droplet.plot(ax, f"Intersection {i+1}, V = {droplet.V:.2f}")
-            if i == 1:
-                height = droplet.get_height()
-                radius = 2.0 / A 
-                height -= radius
-                c = Circle(point(0.0, -height), radius)
-                c.plot(ax)
-
-            
-        ax.set_title(f"Droplets A = {A}")
-        ax.legend()
-        ax.set_aspect("equal")
-
-    elif plot_type == "various" or plot_type == "anim":
-        max_V = 31.0
-        min_V = 0.1
-        num_d = 19
-        lV = np.linspace(min_V, max_V, num_d)
-                
-        fig = plt.figure(figsize=(1000, 1000, 'px'))
-        ax = fig.add_subplot(111)
-        ax.set_aspect("equal")
-        droplets = []
-        for V in lV:
-            A: float
-            print("V=", V)
-            if V <= 2.17221828749:
-                A = shooting(V, 0.0, 2.0, B, a)
-            elif V > 20.0:
-                A = shooting(V, 1.2, 1.4, B, a)
-            elif V > 10.0:
-                A = shooting(V, 1.3, 1.6, B, a)
-            elif V > 5.0:
-                A = shooting(V, 1.5, 1.9, B, a)
-            elif V > 2.17221828749:
-                A = shooting(V, 1.2, 1.9, B, a)
-            
-            ld = find_droplets(A, B, a, np.pi * 5.0, 0.001)
-            if len(ld) >= 2:
-                ld = ld[:2]
-            d = sorted(ld, key=lambda d: abs(d.V - V))[0]
-            droplets.append(d)
-
-        droplets.append(find_droplets(1.19721119513, B, a, np.pi*5.0, 0.001)[1])
-
-        if plot_type == "various":
-            for d in droplets:
-                d.plot(ax, label=f"V={d.V:.3f}")
-            ax.legend()
-
-
-
-        if plot_type == "anim":
-            save = "imgs/b.gif"
-
-            duration = 2.0 #in seconds
-            interval = int(duration/len(droplets) * 1000) #in ms
-
-            ax.set_xlim(-2.0, 2.0)
-            ax.set_ylim(-5.5, 0.1)
-
-            line, = ax.plot([], [], lw=2)
-            line.set_color("black")
-
-
-            def init():
-                line.set_data([], [])
-                return (line,)
-
-
-            def update(frame):
-                x, y = droplets[frame].get_plot_vecs()
-                line.set_data(x, y)
-
-                return (line,)
-
-
-
-            anim = FuncAnimation(
-                fig,
-                update,
-                frames=len(droplets),
-                init_func=init,
-                interval=interval,
-                blit=True
-            )
-            if not (save is None):
-                anim.save(save)
-
-    if show_plot:
-        plt.show()
