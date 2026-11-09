@@ -217,7 +217,7 @@ class Arc(Circle):
         theta1 = angle_origin_vector(v1)
         theta2 = angle_origin_vector(v2)
 
-        if self.counter_clockwise:
+        if self.counter_clockwise_draw:
             diff = (theta2 - theta1) % (2*np.pi)
         else:
             diff = (theta1 - theta2) % (2*np.pi)

@@ -1,7 +1,3 @@
-from sys import path
-
-path.append("./../src")
-
 from solve_PVI import *
 import const
 from objects import Circle
