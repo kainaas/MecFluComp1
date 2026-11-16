@@ -50,12 +50,18 @@ class Droplet:
             z_plot = self.get_height() - z_plot
         return x_plot, z_plot
 
-    def plot(self, ax:plt.Axes, label: str|None = None):
+    def plot(self, ax:plt.Axes, label: str|None = None, scatter:bool=False):
         x_plot, z_plot = self.get_plot_vecs()
         if label is None:
-            ax.plot(x_plot, z_plot)
+            if scatter:
+                ax.scatter(x_plot, z_plot, s=10)
+            else:
+                ax.plot(x_plot, z_plot)
         else:
-            ax.plot(x_plot, z_plot, label=label)
+            if scatter:
+                ax.scatter(x_plot, z_plot, label=label, s=10)
+            else:
+                ax.plot(x_plot, z_plot, label=label)
 
     def dimensionalize(self):
         if self.adimensional:

@@ -1,3 +1,7 @@
+from sys import path
+
+path.append("./../src")
+
 from droplet import * 
 
 
@@ -20,7 +24,7 @@ max_s = 5 * np.pi
 B = density * const.g * a * a / gamma
 
 
-plot_type = "anim" #may be "Vxd", "VxA", "droplet", "droplets", "Vstar", "max_press", "no_g", "various", "anim"
+plot_type = "Vstar" #may be "Vxd", "VxA", "droplet", "droplets", "Vstar", "max_press", "no_g", "various", "anim"
 show_plot = True
 
 

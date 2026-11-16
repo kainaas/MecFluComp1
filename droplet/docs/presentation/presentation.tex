@@ -201,4 +201,67 @@
     \end{figure}
 \end{frame}
 
+
+
+\section{Comparação de métodos}
+
+\begin{frame}{Comparação}
+    \begin{table}
+        \centering
+        \begin{tabular}{rrrrr}
+            \hline
+            $\hat{V} / \hat{V}^*$ &   $\hat{d}$ EDO &   $\hat{d}$ min &   $\hat{\lambda}$ EDO &   $\hat{\lambda} $ min \\
+            \hline
+                            0.333333 &       2.63819 &       2.6442  &            0.367023 &            0.367151 \\
+                            0.666667 &       3.80818 &       3.81706 &            0.244863 &            0.245067 \\
+                            1        &       5.3711  &       5.25363 &            0.150701 &            0.155718 \\
+            \hline
+        \end{tabular}
+        \caption{Comparação entre os tamanhos das gotas e os multiplicadores de Lagrange para frações do volume máximo}
+    \end{table}
+\end{frame}
+
+\begin{frame}{Comparação}
+    \begin{table}
+        \begin{tabular}{rrr}
+            \hline
+            N &   $|\hat{d} - \hat{d}_{EDO}|$ &   $|\hat{\lambda} - \hat{\lambda}_{EDO}|$ \\
+            \hline
+            8 &                    0.107978   &                               0.00302655  \\
+            16 &                    0.02826    &                               0.000738717 \\
+            32 &                    0.00789746 &                               0.000178733 \\
+            64 &                    0.00224217 &                               4.33203e-05 \\
+            \hline
+        \end{tabular}
+        \caption{Convergência com relação ao número de pontos da otimização}
+    \end{table}
+
+    O fator de $\hat{d}$ fica próximo de 3.5, enquanto o para $\hat{\lambda}$ foi próximo de 4.1.
+\end{frame}
+
+
+\begin{frame}
+    
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{lambda_x_V.png}
+        \caption{Multiplicadores de Lagrange em função do volume}
+    \end{figure}
+\end{frame}
+
+\section{Gotas limitadas}
+\begin{frame}
+    \begin{figure}
+        \centering
+        \begin{subfigure}[b]{0.45\textwidth}
+            \includegraphics[width=\textwidth]{Limited_V=20.0.png}
+            \caption{Gota limitada à $r\le 1.4$, $V=20.0$}
+        \end{subfigure}
+        \quad
+        \begin{subfigure}[b]{0.45\textwidth}
+            \includegraphics[width=\textwidth]{Limited_not_V=20.0.png}
+            \caption{Gota $V=20.0$}
+        \end{subfigure}
+    \end{figure}
+\end{frame}
 \end{document}
